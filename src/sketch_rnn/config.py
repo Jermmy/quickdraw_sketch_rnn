@@ -7,4 +7,6 @@ if "Darwin" in platform.system():
 
 quick_draw_dir = root_dir + "DrawShape13/"
 
+preprocessed_data_dir = quick_draw_dir + "preprocessed_data/"
+
 sketch_label_file = root_dir + "label.csv"
