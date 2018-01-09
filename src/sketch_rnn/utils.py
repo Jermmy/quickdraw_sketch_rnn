@@ -4,8 +4,11 @@ from os.path import join, isdir
 import json
 import re
 import numpy as np
-import pickle
 import tensorflow as tf
+try:
+    from tensorflow.contrib import data
+except ImportError:
+    from tensorflow import data
 
 
 def generate_label_file():
@@ -42,12 +45,15 @@ def load_data_files():
 
 class SketchLoader():
 
-    def __init__(self, batch_size=50):
+    def __init__(self, batch_size=50, epoch=5):
         self.batch_size = batch_size
+        self.epoch = epoch
 
         if not os.path.exists(preprocessed_data_dir):
             os.mkdir(preprocessed_data_dir)
             self._preprocess()
+
+        self.train_dataset, self.valid_dataset, self.test_dataset = self._load_dataset()
 
     def _preprocess(self, train_data_size=50000, valid_data_size=5000, test_data_size=5000):
 
@@ -99,6 +105,8 @@ class SketchLoader():
                 writer.write(example.SerializeToString())
 
 
+        print("======== preprocess dataset =========")
+
         dictionary, reverse_dict = get_sketch_labels()
 
         data_files = load_data_files()
@@ -118,7 +126,7 @@ class SketchLoader():
 
                 write_line(line, writer)
 
-            if (i + 1) % 10000 == 0:
+            if (i + 1) % 10000 == 0 and i != train_data_size - 1:
                 writer.close()
                 record_file += 1
                 writer = tf.python_io.TFRecordWriter(join(preprocessed_data_dir,
@@ -153,6 +161,48 @@ class SketchLoader():
         for f in fs:
             f.close()
 
+        print("======== preprocess done ========")
+
+    def _load_dataset(self):
+
+        def parse_record(example):
+            feature = {
+                'train/sketch': tf.FixedLenFeature([], tf.string),
+                'train/label': tf.FixedLenFeature([], tf.int64)
+            }
+
+            parsed_feature = tf.parse_single_example(example, feature)
+            sketch = tf.decode_raw(parsed_feature['train/sketch'], tf.float32)
+            label = tf.cast(parsed_feature['train/label'], tf.float32)
+            sketch = tf.reshape(sketch, [-1, 4])
+            return sketch, label
+
+        train_files = [preprocessed_data_dir + f for f in os.listdir(preprocessed_data_dir)
+                       if re.match(r'train', f) != None]
+        valid_files = [preprocessed_data_dir + f for f in os.listdir(preprocessed_data_dir)
+                      if re.match(r'valid', f) != None]
+        test_files = [preprocessed_data_dir + f for f in os.listdir(preprocessed_data_dir)
+                     if re.match(r'test', f) != None]
+
+        # train_dataset = tf.data.TFRecordDataset(train_files).map(parse_record).\
+        #     apply(data.batch_and_drop_remainder(self.batch_size)).repeat(self.epoch).shuffle(10000)
+        # train_dataset = tf.data.TFRecordDataset(train_files). \
+        #     map(parse_record). \
+        #     padded_batch(self.batch_size, padded_shapes=([None, 4], [])). \
+        #     apply(data.batch_and_drop_remainder(self.batch_size)).\
+        #     repeat(self.epoch)
+
+        # reference: https://github.com/tensorflow/tensorflow/issues/13745
+        #            https://stackoverflow.com/questions/45955241/how-do-i-create-padded-batches-in-tensorflow-for-tf-train-sequenceexample-data-u?rq=1
+        train_dataset = tf.data.TFRecordDataset(train_files). \
+            map(parse_record). \
+            padded_batch(self.batch_size, padded_shapes=([None, 4], [])). \
+            repeat(self.epoch).shuffle(1000)
+        valid_dataset = tf.data.TFRecordDataset(valid_files).map(parse_record)
+        test_dataset = tf.data.TFRecordDataset(test_files).map(parse_record)
+
+        return train_dataset, valid_dataset, test_dataset
+
 
 
 
@@ -160,24 +210,15 @@ if __name__ == '__main__':
     # generate_label_file()
 
 
-    sl = SketchLoader()
+    sl = SketchLoader(batch_size=100, epoch=1)
 
-    # with open(preprocessed_data_dir + "train1.pkl", 'rb') as f:
-    #     save = pickle.load(f)
-    #
-    #     sketch = save["sketch"]
-    #
-    #     print(len(sketch))
-    #
-    #     sketch = sketch[0]
-    #     print(sketch)
-    #     sketch = sketch.flatten()
-    #     print(sketch)
-    #
-    #     sketch = sketch.reshape(-1, 4)
-    #     print(sketch)
-    #
-    #     del save
+    iterator = sl.train_dataset.make_one_shot_iterator()
+    one_element = iterator.get_next()
+
+    with tf.Session() as sess:
+        e = sess.run(one_element)
+        # print(e[0])
+        print(e[1])
 
 
 
