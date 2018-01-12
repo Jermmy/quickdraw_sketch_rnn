@@ -14,6 +14,9 @@ preprocessed_data_dir = quick_draw_dir + "preprocessed_data/"
 
 sketch_label_file = root_dir + "label.csv"
 
+train_data_size=50000
+valid_data_size=5000
+test_data_size=5000
 
 model = 1  # GRU RNN
 
