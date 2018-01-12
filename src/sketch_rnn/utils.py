@@ -86,23 +86,24 @@ class SketchLoader():
         def bytes_feature(value):
             return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-        def write_line(line, writer):
-            line = json.loads(line)
-            if line["recognized"]:
-                # sketch_data.append(build_line(line["drawing"]))
-                # sketch_label.append(dictionary[line["word"]])
+        def write_line(lines, writer):
+            for line in lines:
+                line = json.loads(line)
+                if line["recognized"]:
 
-                sketch_data = build_line(line["drawing"])
-                sketch_label = dictionary[line["word"]]
+                    sketch_data = build_line(line["drawing"])
+                    sketch_len = sketch_data.shape[0]
+                    sketch_label = dictionary[line["word"]]
 
-                feature = {
-                    'train/sketch': bytes_feature(tf.compat.as_bytes(sketch_data.flatten().tostring())),
-                    'train/label': int64_feature(sketch_label)
-                }
+                    feature = {
+                        'sketch': bytes_feature(tf.compat.as_bytes(sketch_data.flatten().tostring())),
+                        'label': int64_feature(sketch_label),
+                        'len': int64_feature(sketch_len)
+                    }
 
-                example = tf.train.Example(features=tf.train.Features(feature=feature))
+                    example = tf.train.Example(features=tf.train.Features(feature=feature))
 
-                writer.write(example.SerializeToString())
+                    writer.write(example.SerializeToString())
 
 
         print("======== preprocess dataset =========")
@@ -119,19 +120,21 @@ class SketchLoader():
                                                   "train" + str(record_file) + ".tfrecords"))
 
         for i in range(train_data_size):
+            lines = []
             for f in fs:
                 line = f.readline()
                 if len(line) == 0:
                     continue
+                lines.append(line)
 
-                write_line(line, writer)
+            write_line(lines, writer)
 
             if (i + 1) % 10000 == 0 and i != train_data_size - 1:
                 writer.close()
+                print("write file %s" % ("train" + str(record_file) + ".tfrecords"))
                 record_file += 1
                 writer = tf.python_io.TFRecordWriter(join(preprocessed_data_dir,
-                                                  "train" + str(record_file) + ".tfrecords"))
-                print("write file %s" % ("train" + str(record_file) + ".tfrecords"))
+                                                          "train" + str(record_file) + ".tfrecords"))
 
             if i == train_data_size - 1:
                 writer.close()
@@ -139,22 +142,26 @@ class SketchLoader():
         writer = tf.python_io.TFRecordWriter(join(preprocessed_data_dir,
                                                   "valid.tfrecords"))
         for i in range(valid_data_size):
+            lines = []
             for f in fs:
                 line = f.readline()
                 if len(line) == 0:
                     continue
-                write_line(line, writer)
+                lines.append(line)
+            write_line(lines, writer)
         writer.close()
         print("write file %s" % ("valid.tfrecords"))
 
         writer = tf.python_io.TFRecordWriter(join(preprocessed_data_dir,
                                                   "test.tfrecords"))
         for i in range(test_data_size):
+            lines = []
             for f in fs:
                 line = f.readline()
                 if len(line) == 0:
                     continue
-                write_line(line, writer)
+                lines.append(line)
+            write_line(lines, writer)
         writer.close()
         print("write file %s" % ("test.tfrecords"))
 
@@ -167,15 +174,17 @@ class SketchLoader():
 
         def parse_record(example):
             feature = {
-                'train/sketch': tf.FixedLenFeature([], tf.string),
-                'train/label': tf.FixedLenFeature([], tf.int64)
+                'sketch': tf.FixedLenFeature([], tf.string),
+                'label': tf.FixedLenFeature([], tf.int64),
+                'len': tf.FixedLenFeature([], tf.int64)
             }
 
             parsed_feature = tf.parse_single_example(example, feature)
-            sketch = tf.decode_raw(parsed_feature['train/sketch'], tf.float32)
-            label = tf.cast(parsed_feature['train/label'], tf.float32)
+            sketch = tf.decode_raw(parsed_feature['sketch'], tf.float32)
+            label = tf.cast(parsed_feature['label'], tf.float32)
+            sketch_len = tf.cast(parsed_feature['len'], tf.int64)
             sketch = tf.reshape(sketch, [-1, 4])
-            return sketch, label
+            return sketch, label, sketch_len
 
         train_files = [preprocessed_data_dir + f for f in os.listdir(preprocessed_data_dir)
                        if re.match(r'train', f) != None]
@@ -195,8 +204,8 @@ class SketchLoader():
         # reference: https://github.com/tensorflow/tensorflow/issues/13745
         #            https://stackoverflow.com/questions/45955241/how-do-i-create-padded-batches-in-tensorflow-for-tf-train-sequenceexample-data-u?rq=1
         train_dataset = tf.data.TFRecordDataset(train_files). \
-            map(parse_record). \
-            padded_batch(self.batch_size, padded_shapes=([None, 4], [])). \
+            map(parse_record, num_parallel_calls=4). \
+            padded_batch(self.batch_size, padded_shapes=([None, 4], [], [])). \
             repeat(self.epoch).shuffle(1000)
         valid_dataset = tf.data.TFRecordDataset(valid_files).map(parse_record)
         test_dataset = tf.data.TFRecordDataset(test_files).map(parse_record)
@@ -217,8 +226,9 @@ if __name__ == '__main__':
 
     with tf.Session() as sess:
         e = sess.run(one_element)
-        # print(e[0])
+        print(e[0])
         print(e[1])
+        print(e[2])
 
 
 
