@@ -113,6 +113,7 @@ class SketchLoader():
 
         data_files = load_data_files()
 
+        train_data_size = train_data_size // len(dictionary)
         valid_data_size = valid_data_size // len(dictionary)
         test_data_size = test_data_size // len(dictionary)
 
@@ -209,8 +210,8 @@ class SketchLoader():
             map(parse_record, num_parallel_calls=8). \
             padded_batch(self.batch_size, padded_shapes=([None, 4], [], [])). \
             repeat(self.epoch)
-        valid_dataset = tf.data.TFRecordDataset(valid_files).map(parse_record)
-        valid_dataset = valid_dataset.padded_batch(valid_data_size, padded_shapes=([None, 4], [], [])).repeat(1)
+        valid_dataset = tf.data.TFRecordDataset(valid_files).map(parse_record).\
+            padded_batch(valid_data_size, padded_shapes=([None, 4], [], [])).repeat(1)
         test_dataset = tf.data.TFRecordDataset(test_files).map(parse_record).\
             padded_batch(test_data_size, padded_shapes=([None, 4], [], [])).repeat(1)
 
