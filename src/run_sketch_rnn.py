@@ -25,14 +25,14 @@ if __name__ == '__main__':
 
     sketch, label, sketch_len = iterator.get_next()
 
-    sketchrnn = SketchBiRNN(sketch, label, sketch_len,
-                          n_class=len(dictionary), cell_hidden=[128, ], avg_output=True)
+    sketchrnn = SketchBiRNN(n_class=n_class, cell_hidden=[128, ], avg_output=True)
+    pred, cost = sketchrnn.train(sketch, label, sketch_len)
 
-    batch_acc = accuracy(tf.nn.softmax(sketchrnn.pred), tf.one_hot(label, n_class))
+    batch_acc = accuracy(tf.nn.softmax(pred), tf.one_hot(label, n_class))
 
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=0.01).minimize(sketchrnn.cost)
+    optimizer = tf.train.RMSPropOptimizer(learning_rate=0.01).minimize(cost)
 
-    tf.summary.scalar("loss", sketchrnn.cost)
+    tf.summary.scalar("loss", cost)
     tf.summary.scalar("batch_acc", batch_acc)
     # # tf.summary.scalar("valid_acc", valid_acc)
     merged_summary_op = tf.summary.merge_all()
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         try:
             step = 0
             while True:
-                _, l, acc, summary = sess.run([optimizer, sketchrnn.cost, batch_acc, merged_summary_op])
+                _, l, acc, summary = sess.run([optimizer, cost, batch_acc, merged_summary_op])
 
                 summary_writer.add_summary(summary, step)
 
@@ -60,8 +60,8 @@ if __name__ == '__main__':
                     try:
                         valid_iterator = sl.valid_dataset.make_one_shot_iterator()
                         valid_sketch, valid_label, valid_sketch_len = valid_iterator.get_next()
-                        valid_pred = sketchrnn.network(valid_sketch, valid_sketch_len, reuse=True)
-                        valid_acc = accuracy(tf.nn.softmax(valid_pred), tf.one_hot(valid_label, n_class))
+                        valid_pred = sketchrnn.inference(valid_sketch, valid_sketch_len, reuse=True)
+                        valid_acc = accuracy(valid_pred, tf.one_hot(valid_label, n_class))
                         while True:
                             [acc] = sess.run([valid_acc])
                             # summary_writer.add_summary(summary, step)
@@ -81,8 +81,8 @@ if __name__ == '__main__':
             test_accs = []
             test_iterator = sl.test_dataset.make_one_shot_iterator()
             test_sketch, test_label, test_sketch_len = test_iterator.get_next()
-            test_pred = sketchrnn.network(test_sketch, test_sketch_len, reuse=True)
-            test_acc = accuracy(tf.nn.softmax(test_pred), tf.one_hot(test_label, n_class))
+            test_pred = sketchrnn.inference(test_sketch, test_sketch_len, reuse=True)
+            test_acc = accuracy(test_pred, tf.one_hot(test_label, n_class))
             try:
                 while True:
                     [acc] = sess.run([test_acc])

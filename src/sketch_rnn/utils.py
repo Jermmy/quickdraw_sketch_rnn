@@ -51,7 +51,7 @@ class SketchLoader():
         self.batch_size = batch_size
         self.epoch = epoch
 
-        self.feature_size = 4
+        self.feature_size = 5
 
         if not os.path.exists(preprocessed_data_dir):
             os.mkdir(preprocessed_data_dir)

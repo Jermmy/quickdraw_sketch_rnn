@@ -6,7 +6,7 @@ from .config import model
 
 class SketchRNN():
 
-    def __init__(self, x, y, seq_len, n_class, cell_hidden=[128, ], avg_output=False):
+    def __init__(self, n_class, cell_hidden=[128, ], avg_output=False):
 
         if not avg_output:
             assert model == 1
@@ -14,16 +14,18 @@ class SketchRNN():
             assert model == 2
 
         self.n_class = n_class
-        self.cell_hidden = cell_hidden
         self.avg_output = avg_output
-
-        self.pred = self.network(x, seq_len)
-
-        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-            logits=self.pred, labels=tf.one_hot(y, n_class)))
+        self.cell_hidden = cell_hidden
 
 
-    def network(self, x, seq_len, reuse=False):
+    def train(self, x, y, seq_len):
+        pred = self._network(x, seq_len)
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+            logits=pred, labels=tf.one_hot(y, self.n_class)))
+        return pred, loss
+
+
+    def _network(self, x, seq_len, reuse=False):
         with tf.variable_scope("sketch_rnn") as scope:
             if reuse:
                 scope.reuse_variables()
@@ -31,13 +33,17 @@ class SketchRNN():
             weights = tf.get_variable("fc_w", shape=[self.cell_hidden[-1], self.n_class],
                                       dtype=tf.float32, initializer=init)
             bias = tf.get_variable("fc_b", shape=[self.n_class], dtype=tf.float32, initializer=init)
-
             batch_size = tf.shape(x)[0]
             max_seq_len = tf.shape(x)[1]
 
             pred = self._dynamic_rnn(x, weights, bias, seq_len, batch_size, max_seq_len)
 
             return pred
+
+    def inference(self, x, seq_len, reuse=False):
+        pred = self._network(x, seq_len, reuse)
+        pred = tf.nn.softmax(pred)
+        return pred
 
 
     def _dynamic_rnn(self, x, weights, bias, seq_len, batch_size, max_seq_len):
@@ -64,7 +70,7 @@ class SketchRNN():
 
 class SketchBiRNN():
 
-    def __init__(self, x, y, seq_len, n_class, cell_hidden=[128, ], avg_output=False):
+    def __init__(self, n_class, cell_hidden=[128, ], avg_output=False):
 
         if not avg_output:
             assert model == 3
@@ -75,12 +81,8 @@ class SketchBiRNN():
         self.cell_hidden = cell_hidden
         self.avg_output = avg_output
 
-        self.pred = self.network(x, seq_len)
 
-        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-            logits=self.pred, labels=tf.one_hot(y, n_class)))
-
-    def network(self, x, seq_len, reuse=False):
+    def _network(self, x, seq_len, reuse=False):
         with tf.variable_scope("sketch_birnn") as scope:
             if reuse:
                 scope.reuse_variables()
@@ -95,6 +97,18 @@ class SketchBiRNN():
             pred = self._dynamic_birnn(x, weights, bias, seq_len, batch_size, max_seq_len)
 
             return pred
+
+    def train(self, x, y, seq_len):
+        pred = self._network(x, seq_len)
+        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+            logits=pred, labels=tf.one_hot(y, self.n_class)))
+        return pred, cost
+
+
+    def inference(self, x, seq_len, reuse=False):
+        pred = self._network(x, seq_len, reuse)
+        pred = tf.nn.softmax(pred)
+        return pred
 
     def _dynamic_birnn(self, x, weights, bias, seq_len, batch_size, max_seq_len):
 
