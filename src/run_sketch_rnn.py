@@ -1,4 +1,4 @@
-from sketch_rnn.model import SketchRNN
+from sketch_rnn.model import SketchRNN, SketchBiRNN
 from sketch_rnn.utils import SketchLoader, get_sketch_labels
 from sketch_rnn.config import model_file, log_dir
 import tensorflow as tf
@@ -24,8 +24,8 @@ if __name__ == '__main__':
 
     sketch, label, sketch_len = iterator.get_next()
 
-    sketchrnn = SketchRNN(sketch, label, sketch_len,
-                          n_class=len(dictionary), cell_hidden=[128, 256])
+    sketchrnn = SketchBiRNN(sketch, label, sketch_len,
+                          n_class=len(dictionary), cell_hidden=[128, ], avg_output=False)
 
     batch_acc = accuracy(tf.nn.softmax(sketchrnn.pred), tf.one_hot(label, n_class))
 
