@@ -13,7 +13,7 @@ def accuracy(prediction, label):
 
 
 if __name__ == '__main__':
-    batch_size = 100
+    batch_size = 200
     epoch = 2
     dictionary, reverse_dict = get_sketch_labels()
     n_class = len(dictionary)
@@ -31,14 +31,14 @@ if __name__ == '__main__':
 
     optimizer = tf.train.RMSPropOptimizer(learning_rate=0.01).minimize(sketchrnn.cost)
 
-    # tf.summary.scalar("loss", sketchrnn.cost)
-    # tf.summary.scalar("batch_acc", batch_acc)
+    tf.summary.scalar("loss", sketchrnn.cost)
+    tf.summary.scalar("batch_acc", batch_acc)
     # # tf.summary.scalar("valid_acc", valid_acc)
-    # merged_summary_op = tf.summary.merge_all()
+    merged_summary_op = tf.summary.merge_all()
 
     with tf.Session() as sess:
         saver = tf.train.Saver()
-        # summary_writer = tf.summary.FileWriter(log_dir, graph=tf.get_default_graph())
+        summary_writer = tf.summary.FileWriter(log_dir, graph=tf.get_default_graph())
 
         if loading_model:
             saver.restore(sess, model_file)
@@ -49,9 +49,9 @@ if __name__ == '__main__':
         try:
             step = 0
             while True:
-                _, l, acc = sess.run([optimizer, sketchrnn.cost, batch_acc])
+                _, l, acc, summary = sess.run([optimizer, sketchrnn.cost, batch_acc, merged_summary_op])
 
-                # summary_writer.add_summary(summary, step)
+                summary_writer.add_summary(summary, step)
 
                 if step % 10 == 0:
                     print("Minibatch at step %d ===== loss: %.2f, acc: %.2f" % (step, l, acc))
@@ -88,3 +88,6 @@ if __name__ == '__main__':
             if saving_model:
                 save_path = saver.save(sess, model_file)
                 print("Model saved in %s" % save_path)
+
+            print("Run the command line:\n--> tensorboard --logdir=/tmp/tensorflow_logs \n"
+                  "Then open http://0.0.0.0:6006/ into your web browser")

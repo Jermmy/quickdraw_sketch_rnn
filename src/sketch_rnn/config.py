@@ -5,7 +5,7 @@ from os.path import join
 if "Darwin" in platform.system():
     root_dir = "/Users/xyz/Desktop/sketch_test/SHREC13/sketch_rnn/"
 elif "Linux" in platform.system():
-    root_dir = ""
+    root_dir = "/home/liuwq/xyz/quickdraw_sketch_rnn-master/"
 
 
 quick_draw_dir = root_dir + "DrawShape13/"

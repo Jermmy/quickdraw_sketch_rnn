@@ -51,6 +51,8 @@ class SketchLoader():
         self.batch_size = batch_size
         self.epoch = epoch
 
+        self.feature_size = 4
+
         if not os.path.exists(preprocessed_data_dir):
             os.mkdir(preprocessed_data_dir)
             self._preprocess()
@@ -60,6 +62,25 @@ class SketchLoader():
     def _preprocess(self, train_data_size=train_data_size, valid_data_size=valid_data_size,
                     test_data_size=test_data_size):
 
+        # def build_line(drawing):
+        #
+        #     sketch_lines = []
+        #     for stroke in drawing:
+        #         X = stroke[0]
+        #         Y = stroke[1]
+        #
+        #         for (x, y) in zip(X, Y):
+        #             sketch_lines.append([x, y, 0, 0])
+        #
+        #         sketch_lines[-1][2] = 1  # end of stroke
+        #
+        #     sketch_lines = np.array(sketch_lines, dtype=np.float32)
+        #
+        #     sketch_lines[1:, 0:2] -= sketch_lines[0:-1, 0:2]
+        #     sketch_lines[-1, 3] = 1  # end of drawing
+        #     # sketch_lines[0] = [0, 0, 0, 0]   # start at origin
+        #     return sketch_lines[1:]
+
         def build_line(drawing):
 
             sketch_lines = []
@@ -68,17 +89,16 @@ class SketchLoader():
                 Y = stroke[1]
 
                 for (x, y) in zip(X, Y):
-                    sketch_lines.append([x, y, 0, 0])
+                    sketch_lines.append([x, y, 0, 0, 1])
 
-                sketch_lines[-1][2] = 1  # end of stroke
+                sketch_lines[-1][4] = 0  # end of stroke
 
             sketch_lines = np.array(sketch_lines, dtype=np.float32)
 
-            sketch_lines[1:, 0:2] -= sketch_lines[0:-1, 0:2]
-            sketch_lines[-1, 3] = 1  # end of drawing
+            sketch_lines[0:-1, 2:3] = sketch_lines[1:, 0:1] - sketch_lines[0:-1, 0:1]
+            # sketch_lines[-1, 3] = 1  # end of drawing
             # sketch_lines[0] = [0, 0, 0, 0]   # start at origin
-
-            return sketch_lines[1:]
+            return sketch_lines[0:-1]
 
         def int64_feature(value):
             return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
@@ -186,7 +206,7 @@ class SketchLoader():
             sketch = tf.decode_raw(parsed_feature['sketch'], tf.float32)
             label = tf.cast(parsed_feature['label'], tf.int32)
             sketch_len = tf.cast(parsed_feature['len'], tf.int32)
-            sketch = tf.reshape(sketch, [-1, 4])
+            sketch = tf.reshape(sketch, [-1, self.feature_size])
             return sketch, label, sketch_len
 
         train_files = [preprocessed_data_dir + f for f in os.listdir(preprocessed_data_dir)
@@ -208,12 +228,12 @@ class SketchLoader():
         #            https://stackoverflow.com/questions/45955241/how-do-i-create-padded-batches-in-tensorflow-for-tf-train-sequenceexample-data-u?rq=1
         train_dataset = tf.data.TFRecordDataset(train_files). \
             map(parse_record, num_parallel_calls=8). \
-            padded_batch(self.batch_size, padded_shapes=([None, 4], [], [])). \
+            padded_batch(self.batch_size, padded_shapes=([None, self.feature_size], [], [])). \
             repeat(self.epoch)
         valid_dataset = tf.data.TFRecordDataset(valid_files).map(parse_record).\
-            padded_batch(valid_data_size, padded_shapes=([None, 4], [], [])).repeat(1)
+            padded_batch(valid_data_size, padded_shapes=([None, self.feature_size], [], [])).repeat(1)
         test_dataset = tf.data.TFRecordDataset(test_files).map(parse_record).\
-            padded_batch(test_data_size, padded_shapes=([None, 4], [], [])).repeat(1)
+            padded_batch(test_data_size, padded_shapes=([None, self.feature_size], [], [])).repeat(1)
 
         return train_dataset, valid_dataset, test_dataset
 

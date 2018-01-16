@@ -85,7 +85,7 @@ class SketchBiRNN():
             if reuse:
                 scope.reuse_variables()
             init = tf.truncated_normal_initializer(stddev=0.01)
-            weights = tf.get_variable("fc_w", shape=[self.cell_hidden[-1], self.n_class],
+            weights = tf.get_variable("fc_w", shape=[self.cell_hidden[-1] * 2, self.n_class],
                                       dtype=tf.float32, initializer=init)
             bias = tf.get_variable("fc_b", shape=[self.n_class], dtype=tf.float32, initializer=init)
 
@@ -112,9 +112,11 @@ class SketchBiRNN():
             sequence_length=seq_len
         )
 
+        outputs = tf.concat(outputs, 2)
+
         if not self.avg_output:
             index = tf.range(0, batch_size) * max_seq_len + (seq_len - 1)
-            outputs = tf.reshape(outputs, [-1, self.cell_hidden[-1]])
+            outputs = tf.reshape(outputs, [-1, self.cell_hidden[-1] * 2])
             outputs = tf.gather(outputs, index)
         else:
             outputs = tf.reduce_mean(outputs, axis=1)
