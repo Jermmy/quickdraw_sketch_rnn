@@ -231,9 +231,9 @@ class SketchLoader():
             padded_batch(self.batch_size, padded_shapes=([None, self.feature_size], [], [])). \
             repeat(self.epoch)
         valid_dataset = tf.data.TFRecordDataset(valid_files).map(parse_record).\
-            padded_batch(valid_data_size, padded_shapes=([None, self.feature_size], [], [])).repeat(1)
+            padded_batch(self.batch_size, padded_shapes=([None, self.feature_size], [], [])).repeat(1)
         test_dataset = tf.data.TFRecordDataset(test_files).map(parse_record).\
-            padded_batch(test_data_size, padded_shapes=([None, self.feature_size], [], [])).repeat(1)
+            padded_batch(self.batch_size, padded_shapes=([None, self.feature_size], [], [])).repeat(1)
 
         return train_dataset, valid_dataset, test_dataset
 
