@@ -25,7 +25,7 @@ if __name__ == '__main__':
     sketch, label, sketch_len = iterator.get_next()
 
     sketchrnn = SketchRNN(sketch, label, sketch_len,
-                          n_class=len(dictionary), cell_hidden=[128, 256], n_hidden=128)
+                          n_class=len(dictionary), cell_hidden=[128, 256])
 
     batch_acc = accuracy(tf.nn.softmax(sketchrnn.pred), tf.one_hot(label, n_class))
 

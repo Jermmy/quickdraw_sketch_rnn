@@ -6,12 +6,16 @@ from .config import model
 
 class SketchRNN():
 
-    def __init__(self, x, y, seq_len, n_class, cell_hidden=[128, ], n_hidden=128):
+    def __init__(self, x, y, seq_len, n_class, cell_hidden=[128, ], avg_output=False):
 
-        assert model == 1
+        if not avg_output:
+            assert model == 1
+        else:
+            assert model == 2
+
+        print("cell hidden: %s" % str(cell_hidden))
 
         self.n_class = n_class
-        self.n_hidden = n_hidden
         self.cell_hidden = cell_hidden
 
         self.pred = self.network(x, seq_len)
@@ -25,7 +29,7 @@ class SketchRNN():
             if reuse:
                 scope.reuse_variables()
             init = tf.truncated_normal_initializer(stddev=0.01)
-            weights = tf.get_variable("fc_w", shape=[self.n_hidden, self.n_class],
+            weights = tf.get_variable("fc_w", shape=[self.cell_hidden[-1], self.n_class],
                                       dtype=tf.float32, initializer=init)
             bias = tf.get_variable("fc_b", shape=[self.n_class], dtype=tf.float32, initializer=init)
 
@@ -50,6 +54,9 @@ class SketchRNN():
 
         index = tf.range(0, batch_size) * max_seq_len + (seq_len - 1)
 
-        outputs = tf.reshape(outputs, [-1, self.n_hidden])
+        outputs = tf.reshape(outputs, [-1, self.cell_hidden[-1]])
         outputs = tf.gather(outputs, index)
         return tf.matmul(outputs, weights) + bias
+
+
+
