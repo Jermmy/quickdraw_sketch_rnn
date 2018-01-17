@@ -229,6 +229,7 @@ class SketchLoader():
         train_dataset = tf.data.TFRecordDataset(train_files). \
             map(parse_record, num_parallel_calls=8). \
             padded_batch(self.batch_size, padded_shapes=([None, self.feature_size], [], [])). \
+            shuffle(5000). \
             repeat(self.epoch)
         valid_dataset = tf.data.TFRecordDataset(valid_files).map(parse_record).\
             padded_batch(self.batch_size, padded_shapes=([None, self.feature_size], [], [])).repeat(1)

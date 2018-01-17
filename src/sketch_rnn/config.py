@@ -19,9 +19,9 @@ valid_data_size=8000
 test_data_size=8000
 
 # model = 1  # GRU RNN with last output states
-# model = 2  # GRU RNN with mean output states
+model = 2  # GRU RNN with mean output states
 # model = 3  # GRU BiRNN with last output states
-model = 4  # GRU BiRNN with mean output states
+# model = 4  # GRU BiRNN with mean output states
 
 
 model_dir = join(root_dir, "model" + str(model))
