@@ -14,7 +14,7 @@ def accuracy(prediction, label):
 
 
 if __name__ == '__main__':
-    batch_size = 200
+    batch_size = 100
     epoch = 2
     dictionary, reverse_dict = get_sketch_labels()
     n_class = len(dictionary)
@@ -25,12 +25,15 @@ if __name__ == '__main__':
 
     sketch, label, sketch_len = iterator.get_next()
 
-    sketchrnn = SketchBiRNN(n_class=n_class, cell_hidden=[128, ], avg_output=True)
+    sketchrnn = SketchBiRNN(n_class=n_class, cell_hidden=[256, ], avg_output=True)
     pred, cost = sketchrnn.train(sketch, label, sketch_len)
 
     batch_acc = accuracy(tf.nn.softmax(pred), tf.one_hot(label, n_class))
 
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=0.01).minimize(cost)
+    global_step = tf.Variable(0, trainable=False)
+    starter_learning_rate = 0.01
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, 1000, 0.8, staircase=True)
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
     tf.summary.scalar("loss", cost)
     tf.summary.scalar("batch_acc", batch_acc)
@@ -56,6 +59,7 @@ if __name__ == '__main__':
 
                 if step % 10 == 0:
                     print("Minibatch at step %d ===== loss: %.2f, acc: %.2f" % (step, l, acc))
+                if step % 400 == 0:
                     valid_accs = []
                     try:
                         valid_iterator = sl.valid_dataset.make_one_shot_iterator()
