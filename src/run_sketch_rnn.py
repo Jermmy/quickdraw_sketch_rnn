@@ -1,4 +1,4 @@
-from sketch_rnn.model import SketchRNN, SketchBiRNN
+from sketch_rnn.model import online_model
 from sketch_rnn.utils import SketchLoader, get_sketch_labels
 from sketch_rnn.config import model_file, log_dir
 import tensorflow as tf
@@ -14,8 +14,8 @@ def accuracy(prediction, label):
 
 
 if __name__ == '__main__':
-    batch_size = 200
-    epoch = 2
+    batch_size = 100
+    epoch = 5
     dictionary, reverse_dict = get_sketch_labels()
     n_class = len(dictionary)
 
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     sketch, label, sketch_len = iterator.get_next()
 
-    sketchrnn = SketchRNN(n_class=n_class, cell_hidden=[500,], avg_output=True)
+    sketchrnn = online_model(n_class=n_class, cell_hidden=[500,])
     pred, cost = sketchrnn.train(sketch, label, sketch_len)
 
     batch_acc = accuracy(tf.nn.softmax(pred), tf.one_hot(label, n_class))

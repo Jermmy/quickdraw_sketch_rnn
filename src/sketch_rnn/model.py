@@ -127,11 +127,21 @@ class SketchBiRNN():
             sequence_length=seq_len
         )
 
-        outputs = tf.concat(outputs, 2)
+        # outputs = tf.concat(outputs, 2)
+        #
+        # if not self.avg_output:
+        #     index = tf.range(0, batch_size) * max_seq_len + (seq_len - 1)
+        #     outputs = tf.reshape(outputs, [-1, self.cell_hidden[-1] * 2])
+        #     outputs = tf.gather(outputs, index)
+        # else:
+        #     outputs = tf.reduce_sum(outputs, axis=1)
+        #     outputs = tf.divide(outputs, tf.cast(seq_len[:, None], tf.float32))
+
+        outputs = (outputs[0] + outputs[1]) / 2
 
         if not self.avg_output:
             index = tf.range(0, batch_size) * max_seq_len + (seq_len - 1)
-            outputs = tf.reshape(outputs, [-1, self.cell_hidden[-1] * 2])
+            outputs = tf.reshape(outputs, [-1, self.cell_hidden[-1]])
             outputs = tf.gather(outputs, index)
         else:
             outputs = tf.reduce_sum(outputs, axis=1)
@@ -143,4 +153,14 @@ class SketchBiRNN():
         return fc2
 
 
-
+def online_model(n_class, cell_hidden=[128, ]):
+    if model == 1:
+        return SketchRNN(n_class, cell_hidden)
+    elif model == 2:
+        return SketchRNN(n_class, cell_hidden, avg_output=True)
+    elif model == 3:
+        return SketchBiRNN(n_class, cell_hidden)
+    elif model == 4:
+        return SketchBiRNN(n_class, cell_hidden, avg_output=True)
+    else:
+        return None

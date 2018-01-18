@@ -91,11 +91,11 @@ class SketchLoader():
                 for (x, y) in zip(X, Y):
                     sketch_lines.append([x, y, 0, 0, 1])
 
-                sketch_lines[-1][4] = 0  # end of stroke
+                sketch_lines[-1][4] = 1  # end of stroke
 
             sketch_lines = np.array(sketch_lines, dtype=np.float32)
 
-            sketch_lines[0:-1, 2:3] = sketch_lines[1:, 0:1] - sketch_lines[0:-1, 0:1]
+            sketch_lines[0:-1, 2:4] = sketch_lines[1:, 0:2] - sketch_lines[0:-1, 0:2]
             # sketch_lines[-1, 3] = 1  # end of drawing
             # sketch_lines[0] = [0, 0, 0, 0]   # start at origin
             return sketch_lines[0:-1]
@@ -244,18 +244,51 @@ if __name__ == '__main__':
 
     sl = SketchLoader(batch_size=7600, epoch=1)
 
-    iterator = sl.valid_dataset.make_one_shot_iterator()
-    one_element = iterator.get_next()
+    # iterator = sl.valid_dataset.make_one_shot_iterator()
+    # one_element = iterator.get_next()
+    #
+    # with tf.Session() as sess:
+    #     try:
+    #         while True:
+    #             e = sess.run(one_element)
+    #             print(e[0].shape)
+    #
+    #     except tf.errors.OutOfRangeError:
+    #         print("end")
 
-    with tf.Session() as sess:
-        try:
-            while True:
-                e = sess.run(one_element)
-                print(e[0].shape)
-                # print(e[1])
-                # print(e[2])
+    # data_files = load_data_files()
+    # file = data_files[0]
+    #
+    # with open(file, 'r') as f:
+    #     content = f.readlines()[0]
+    #
+    # print(content)
+    #
+    # line = json.loads(content)["drawing"]
+    #
+    # print(line)
+    #
+    # sketch_lines = []
+    # for stroke in line:
+    #     X = stroke[0]
+    #     Y = stroke[1]
+    #     sketch_line = []
+    #
+    #     for (x, y) in zip(X, Y):
+    #         sketch_lines.append([x, y, 0, 0, 1])
+    #
+    #     sketch_lines[-1][4] = 0  # end of stroke
+    #
+    # sketch_lines = np.array(sketch_lines, dtype=np.float32)
+    #
+    # # sketch_lines[0:-1, 2:4] = sketch_lines[1:, 0:2] - sketch_lines[0:-1, 0:2]
+    # sketch_lines = sketch_lines[1:, 0:2] - sketch_lines[0:-1, 0:2]
+    #
+    # print(sketch_lines)
 
-        except tf.errors.OutOfRangeError:
-            print("end")
 
-        print("finish")
+
+
+
+
+

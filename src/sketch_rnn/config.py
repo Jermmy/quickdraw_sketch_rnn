@@ -14,7 +14,7 @@ preprocessed_data_dir = quick_draw_dir + "preprocessed_data/"
 
 sketch_label_file = root_dir + "label.csv"
 
-train_data_size=500000
+train_data_size=750000
 valid_data_size=8000
 test_data_size=8000
 
