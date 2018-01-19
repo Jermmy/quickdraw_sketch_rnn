@@ -47,11 +47,12 @@ def load_data_files():
 
 
 class SketchLoader():
+
     def __init__(self, batch_size=50, epoch=5):
         self.batch_size = batch_size
         self.epoch = epoch
 
-        self.feature_size = 5
+        self.feature_size = 3
 
         if not os.path.exists(preprocessed_data_dir):
             os.mkdir(preprocessed_data_dir)
@@ -70,7 +71,7 @@ class SketchLoader():
                 Y = stroke[1]
 
                 for (x, y) in zip(X, Y):
-                    sketch_lines.append([x, y, 0, 0])
+                    sketch_lines.append([x, y, 0])
 
                 sketch_lines[-1][2] = 1  # end of stroke
 
@@ -83,29 +84,11 @@ class SketchLoader():
             sketch_lines[:, 0:2] = (sketch_lines[:, 0:2] - lower) / scale
 
             sketch_lines[1:, 0:2] -= sketch_lines[0:-1, 0:2]
-            sketch_lines[-1, 3] = 1  # end of drawing
+            # sketch_lines[-1, 3] = 1  # end of drawing
             # sketch_lines[0] = [0, 0, 0, 0]   # start at origin
 
             return sketch_lines[1:]
 
-        # def build_line(drawing):
-        #
-        #     sketch_lines = []
-        #     for stroke in drawing:
-        #         X = stroke[0]
-        #         Y = stroke[1]
-        #
-        #         for (x, y) in zip(X, Y):
-        #             sketch_lines.append([x, y, 0, 0, 1])
-        #
-        #         sketch_lines[-1][4] = 1  # end of stroke
-        #
-        #     sketch_lines = np.array(sketch_lines, dtype=np.float32)
-        #
-        #     sketch_lines[0:-1, 2:4] = sketch_lines[1:, 0:2] - sketch_lines[0:-1, 0:2]
-        #     # sketch_lines[-1, 3] = 1  # end of drawing
-        #     # sketch_lines[0] = [0, 0, 0, 0]   # start at origin
-        #     return sketch_lines[0:-1]
 
         def int64_feature(value):
             return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
@@ -251,50 +234,17 @@ if __name__ == '__main__':
 
     sl = SketchLoader(batch_size=7600, epoch=1)
 
-    # iterator = sl.valid_dataset.make_one_shot_iterator()
-    # one_element = iterator.get_next()
-    #
-    # with tf.Session() as sess:
-    #     try:
-    #         while True:
-    #             e = sess.run(one_element)
-    #             print(e[0].shape)
-    #
-    #     except tf.errors.OutOfRangeError:
-    #         print("end")
+    iterator = sl.valid_dataset.make_one_shot_iterator()
+    one_element = iterator.get_next()
 
-    # data_files = load_data_files()
-    # file = data_files[0]
+    with tf.Session() as sess:
+        try:
+            while True:
+                e = sess.run(one_element)
+                print(e[0])
+
+        except tf.errors.OutOfRangeError:
+            print("end")
+
     #
-    # with open(file, 'r') as f:
-    #     content = f.readlines()[0]
-    #
-    # print(content)
-    #
-    # line = json.loads(content)["drawing"]
-    #
-    # print(line)
-    #
-    # sketch_lines = []
-    # for stroke in line:
-    #     X = stroke[0]
-    #     Y = stroke[1]
-    #     sketch_line = []
-    #
-    #     for (x, y) in zip(X, Y):
-    #         sketch_lines.append([x, y, 0, 0])
-    #
-    #     sketch_lines[-1][2] = 1  # end of stroke
-    #
-    # sketch_lines = np.array(sketch_lines, dtype=np.float32)
-    #
-    # lower = np.min(sketch_lines[:, 0:2], axis=0)
-    # upper = np.max(sketch_lines[:, 0:2], axis=0)
-    # scale = upper - lower
-    # scale[scale == 0] = 1
-    # sketch_lines[:, 0:2] = (sketch_lines[:, 0:2] - lower) / scale
-    #
-    # sketch_lines[1:, 0:2] -= sketch_lines[0:-1, 0:2]
-    # sketch_lines[-1, 3] = 1  # end of drawing
-    #
-    # print(sketch_lines)
+

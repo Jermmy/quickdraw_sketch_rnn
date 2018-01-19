@@ -153,6 +153,80 @@ class SketchBiRNN():
         return fc2
 
 
+class SketchConvRNN():
+
+    def __init__(self, n_class, cell_hidden=[128, ]):
+
+        assert model == 5
+
+        self.n_class = n_class
+        self.cell_hidden = cell_hidden
+        self.fc_hidden = 200
+
+
+    def train(self, x, y, seq_len):
+        pred = self._network(x, seq_len)
+        cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+            logits=pred, labels=y))
+        return pred, cost
+
+    def inference(self, x, seq_len, reuse=False):
+        pred = self._network(x, seq_len, reuse)
+        pred = tf.nn.softmax(pred)
+        return pred
+
+
+    def _network(self, x, seq_len, reuse=False):
+        with tf.variable_scope("sketchconvrnn") as scope:
+            if reuse:
+                scope.reuse_variables()
+
+            conv_input = x
+
+
+            c1 = tf.layers.conv1d(conv_input, filters=48, kernel_size=5,
+                                  padding='SAME', strides=1, name="conv1")
+            c2 = tf.layers.conv1d(c1, filters=64, kernel_size=5,
+                                  padding='SAME', strides=1, name="conv2")
+
+
+            batch_size = tf.shape(x)[0]
+            max_seq_len = tf.shape(x)[1]
+
+            pred = self._dynamic_birnn(c2, seq_len, batch_size, max_seq_len)
+
+            return pred
+
+
+    def _dynamic_birnn(self, x, seq_len, batch_size, max_seq_len):
+
+        cell_fw = rnn.MultiRNNCell([rnn.GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
+        cell_bw = rnn.MultiRNNCell([rnn.GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
+        init_state_fw = cell_fw.zero_state(batch_size, dtype=tf.float32)
+        init_state_bw = cell_bw.zero_state(batch_size, dtype=tf.float32)
+
+        outputs, states = tf.nn.bidirectional_dynamic_rnn(
+            cell_fw=cell_fw,
+            cell_bw=cell_bw,
+            inputs=x,
+            initial_state_fw=init_state_fw,
+            initial_state_bw=init_state_bw,
+            sequence_length=seq_len
+        )
+
+        outputs = (outputs[0] + outputs[1]) / 2
+
+        outputs = tf.reduce_sum(outputs, axis=1)
+        outputs = tf.divide(outputs, tf.cast(seq_len[:, None], tf.float32))
+
+        fc1 = tf.layers.dense(outputs, self.fc_hidden, name="fc1")
+        fc2 = tf.layers.dense(fc1, self.n_class, name="fc2")
+
+        return fc2
+
+
+
+
 def online_model(n_class, cell_hidden=[128, ]):
     if model == 1:
         return SketchRNN(n_class, cell_hidden)
@@ -162,5 +236,7 @@ def online_model(n_class, cell_hidden=[128, ]):
         return SketchBiRNN(n_class, cell_hidden)
     elif model == 4:
         return SketchBiRNN(n_class, cell_hidden, avg_output=True)
+    elif model == 5:
+        return SketchConvRNN(n_class, cell_hidden)
     else:
         return None
