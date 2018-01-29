@@ -25,14 +25,14 @@ if __name__ == '__main__':
 
     sketch, label, sketch_len = iterator.get_next()
 
-    sketchrnn = online_model(n_class=n_class, cell_hidden=[100,])
+    sketchrnn = online_model(n_class=n_class, cell_hidden=[128, 128])
     pred, cost = sketchrnn.train(sketch, label, sketch_len)
 
     batch_acc = accuracy(tf.nn.softmax(pred), tf.one_hot(label, n_class))
 
     global_step = tf.Variable(0, trainable=False)
-    starter_learning_rate = 0.001
-    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, 1000, 0.7, staircase=True)
+    starter_learning_rate = 0.0001
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, 2000, 0.7, staircase=True)
     # optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
     optimizer = tf.contrib.layers.optimize_loss(
         loss=cost,
@@ -40,8 +40,7 @@ if __name__ == '__main__':
         learning_rate=learning_rate,
         optimizer=tf.train.RMSPropOptimizer,
         clip_gradients=9.0,
-        summaries=["learning_rate", "loss", "gradients", "gradient_norm"]
-
+        summaries=["learning_rate", "loss", "gradients"]
     )
 
     tf.summary.scalar("loss", cost)
@@ -66,7 +65,7 @@ if __name__ == '__main__':
 
                 summary_writer.add_summary(summary, step)
 
-                if step % 1 == 0:
+                if step % 100 == 0:
                     print("Minibatch at step %d ===== loss: %.2f, acc: %.2f" % (step, l, acc))
                 if step % 500 == 0:
                     valid_accs = []

@@ -235,12 +235,12 @@ if __name__ == '__main__':
     sl = SketchLoader(batch_size=7600, epoch=1)
 
     iterator = sl.valid_dataset.make_one_shot_iterator()
-    one_element = iterator.get_next()
+    sketch, label, sketch_len = iterator.get_next()
 
     with tf.Session() as sess:
         try:
             while True:
-                e = sess.run(one_element)
+                e = sess.run([sketch, label, sketch_len])
                 print(e[0])
 
         except tf.errors.OutOfRangeError:

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.contrib import rnn
+from tensorflow.contrib.rnn import GRUCell, DropoutWrapper, MultiRNNCell
 
 from .config import model
 
@@ -45,7 +45,7 @@ class SketchRNN():
 
     def _dynamic_rnn(self, x, seq_len, batch_size, max_seq_len):
 
-        cell = rnn.MultiRNNCell([rnn.GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
+        cell = MultiRNNCell([GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
         init_state = cell.zero_state(batch_size, dtype=tf.float32)
         outputs, state = tf.nn.dynamic_rnn(
             cell,
@@ -113,8 +113,8 @@ class SketchBiRNN():
 
     def _dynamic_birnn(self, x, seq_len, batch_size, max_seq_len):
 
-        cell_fw = rnn.MultiRNNCell([rnn.GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
-        cell_bw = rnn.MultiRNNCell([rnn.GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
+        cell_fw = MultiRNNCell([GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
+        cell_bw = MultiRNNCell([GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
         init_state_fw = cell_fw.zero_state(batch_size, dtype=tf.float32)
         init_state_bw = cell_bw.zero_state(batch_size, dtype=tf.float32)
 
@@ -161,34 +161,44 @@ class SketchConvRNN():
 
         self.n_class = n_class
         self.cell_hidden = cell_hidden
-        self.fc_hidden = 200
+        # self.fc_hidden = 200
 
 
     def train(self, x, y, seq_len):
-        pred = self._network(x, seq_len)
+        pred = self._network(x, seq_len, reuse=False, is_training=True)
         cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
             logits=pred, labels=y))
         return pred, cost
 
     def inference(self, x, seq_len, reuse=False):
-        pred = self._network(x, seq_len, reuse)
+        pred = self._network(x, seq_len, reuse, is_training=False)
         pred = tf.nn.softmax(pred)
         return pred
 
 
-    def _network(self, x, seq_len, reuse=False):
+    def _network(self, x, seq_len, reuse=False, is_training=False):
         with tf.variable_scope("sketchconvrnn") as scope:
             if reuse:
                 scope.reuse_variables()
 
             conv_input = x
 
+            # conv_input = tf.layers.batch_normalization(conv_input, training=is_training, name="bn1")
 
+            # The 1 stride make sure the seq_len won't change when fedding into GRU
+            # c1 = tf.layers.dropout(conv_input, rate=0.3, training=is_training)
             c1 = tf.layers.conv1d(conv_input, filters=48, kernel_size=5,
                                   padding='SAME', strides=1, name="conv1")
-            c2 = tf.layers.conv1d(c1, filters=64, kernel_size=5,
+            c1 = tf.layers.batch_normalization(c1, training=is_training, name="bn1")
+            c1 = tf.nn.tanh(c1)
+            c2 = tf.layers.dropout(c1, rate=0.3, training=is_training)
+            c2 = tf.layers.conv1d(c2, filters=64, kernel_size=5,
                                   padding='SAME', strides=1, name="conv2")
-
+            c2 = tf.layers.batch_normalization(c2, training=is_training, name="bn2")
+            c2 = tf.nn.tanh(c2)
+            # c3 = tf.layers.dropout(c2, rate=0.3, training=is_training)
+            # c3 = tf.layers.conv1d(c3, filters=96, kernel_size=3,
+            #                       padding='SAME', strides=1, name="conv3")
 
             batch_size = tf.shape(x)[0]
             max_seq_len = tf.shape(x)[1]
@@ -200,8 +210,10 @@ class SketchConvRNN():
 
     def _dynamic_birnn(self, x, seq_len, batch_size, max_seq_len):
 
-        cell_fw = rnn.MultiRNNCell([rnn.GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
-        cell_bw = rnn.MultiRNNCell([rnn.GRUCell(cell_hidden) for cell_hidden in self.cell_hidden])
+        cell_fw = MultiRNNCell([DropoutWrapper(GRUCell(cell_hidden))
+                                    for cell_hidden in self.cell_hidden])
+        cell_bw = MultiRNNCell([DropoutWrapper(GRUCell(cell_hidden)) for cell_hidden in self.cell_hidden])
+
         init_state_fw = cell_fw.zero_state(batch_size, dtype=tf.float32)
         init_state_bw = cell_bw.zero_state(batch_size, dtype=tf.float32)
 
@@ -219,10 +231,12 @@ class SketchConvRNN():
         outputs = tf.reduce_sum(outputs, axis=1)
         outputs = tf.divide(outputs, tf.cast(seq_len[:, None], tf.float32))
 
-        fc1 = tf.layers.dense(outputs, self.fc_hidden, name="fc1")
-        fc2 = tf.layers.dense(fc1, self.n_class, name="fc2")
+        # fc1 = tf.layers.dense(outputs, self.fc_hidden, name="fc1")
+        # fc2 = tf.layers.dense(fc1, self.n_class, name="fc2")
 
-        return fc2
+        fc = tf.layers.dense(outputs, self.n_class, name="fc")
+
+        return fc
 
 
 
