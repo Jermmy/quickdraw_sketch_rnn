@@ -74,7 +74,7 @@ def train(config):
             print(output.shape)
 
         if epoch < config.epochs:
-            train_dataset.reload_npy_files()
+            train_dataset.reload_pkl_files()
 
 
 if __name__ == '__main__':

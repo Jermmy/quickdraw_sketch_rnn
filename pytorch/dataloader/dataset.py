@@ -31,8 +31,6 @@ class TrainDataset(Dataset):
         train_data = []
         train_label = []
         for i, file in enumerate(files):
-            if i > 5:
-                break
             print('read %s' % file)
             with open(join(train_dir, file), 'rb') as f:
                 data = pickle.load(f)
@@ -52,7 +50,7 @@ class TrainDataset(Dataset):
         permutation = np.random.permutation(len(train_data))
         return train_data, train_label, permutation
 
-    def reload_npy_files(self):
+    def reload_pkl_files(self):
         '''
         Reload dataset after each iteration
         :return:
