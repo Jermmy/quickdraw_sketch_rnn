@@ -4,6 +4,7 @@ import sys
 import argparse
 import numpy as np
 import json
+import pickle
 
 # ----------------------------------------------------------
 def generate_label_dict(quickdraw_dir, label_file):
@@ -59,8 +60,14 @@ def split_dataset(quickdraw_dir, train_dir, test_dir):
             train_data = np.array(train_data)
             test_data = np.array(test_data)
 
-            np.save(join(train_dir, file.split('.')[0]), train_data)
-            np.save(join(test_dir, file.split('.')[0]), test_data)
+            with open(join(train_dir, file.split('.')[0] + '.pkl'), 'wb') as f:
+                pickle.dump(train_data, f)
+
+            with open(join(test_dir, file.split('.')[0] + '.pkl'), 'wb') as f:
+                pickle.dump(test_data, f)
+
+            # np.save(join(train_dir, file.split('.')[0]), train_data)
+            # np.save(join(test_dir, file.split('.')[0]), test_data)
 
             if len(train_data) > train_max_size:
                 train_max_size = len(train_data)

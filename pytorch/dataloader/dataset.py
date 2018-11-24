@@ -4,17 +4,19 @@ from torch.utils.data import Dataset
 import os
 from os.path import join, exists
 import numpy as np
+import pickle
 import random
 
-MAX_SIZE = 70000
+MAX_SIZE = 1
 
 
 class TrainDataset(Dataset):
 
     def __init__(self, train_dir, label_file):
-        files = [f for f in os.listdir(train_dir) if f.endswith('npy')]
+        self.train_dir = train_dir
+        self.files = [f for f in os.listdir(train_dir) if f.endswith('npy')]
         self.label_dict = self.process_label_file(label_file) # name: label
-        self.train_data = self.read_npy_files(train_dir, files, self.label_dict)
+        self.train_data = self._read_files(train_dir, self.files, self.label_dict)
 
     def process_label_file(self, label_file):
         dictionary = {}
@@ -24,14 +26,27 @@ class TrainDataset(Dataset):
                 dictionary[line[0]] = int(line[1])
         return dictionary
 
-    def read_npy_files(self, train_dir, files, dict):
+    def _read_files(self, train_dir, files, dict):
         train_datas = {}
         for file in files:
-            label = dict[file.split('.')[0]]
-            data = np.load(join(train_dir, file))
-            np.random.shuffle(data)
-            train_datas[label] = data[0:MAX_SIZE]
+            print('read %s' % file)
+            with open(join(train_dir, file), 'rb') as f:
+                data = pickle.load(f)
+                label = dict[file.split('.')[0]]
+                np.random.shuffle(data)
+                data = data[0:MAX_SIZE]
+                # We load only MAX_SIZE in each iteration to avoid OOM
+                train_datas[label] = data
+
         return train_datas
+
+    def reload_npy_files(self):
+        '''
+        Reload dataset after each iteration
+        :return:
+        '''
+        print('reload dataset')
+        self.train_data = self._read_files(self.train_dir, self.files, self.label_dict)
 
     def __len__(self):
         size = 0

@@ -42,9 +42,9 @@ def train(config):
 
     train_dataset = TrainDataset(config.train_dir, config.label_file)
 
-    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True, num_workers=config.num_workers)
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
 
-    gru = GRU(config.input_size, config.hidden_size, output_size=len(dictionary.keys()))
+    gru = GRU(config.input_size, config.hidden_size, output_size=len(dictionary.keys()), n_layers=config.n_layers)
 
     nllLoss = torch.nn.NLLLoss()
 
@@ -69,13 +69,29 @@ def train(config):
 
             loss = 0
 
+            print(sketch.shape)
+            print(label.shape)
+            print(output.shape)
 
-
-
+        if epoch < config.epochs:
+            train_dataset.reload_npy_files()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('--ckpt_path', type=str, default='ckpt/gru')
+    parser.add_argument('--result_path', type=str, default='result/gru')
+    parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
+    parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train')
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--input_size', type=int, default=3)
+    parser.add_argument('--hidden_size', type=int, default=100)
+    parser.add_argument('--n_layers', type=int, default=2)
+    parser.add_argument('--load_model', type=str, default=None)
+    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--start_idx', type=int, default=0)
+    parser.add_argument('--epochs', type=int, default=10)
 
     config = parser.parse_args()
     train(config)
