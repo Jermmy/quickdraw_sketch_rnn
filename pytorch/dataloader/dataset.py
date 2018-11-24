@@ -7,13 +7,14 @@ import numpy as np
 import pickle
 import random
 
-MAX_SIZE = 100
+MAX_SIZE = 1000
 
 
 class TrainDataset(Dataset):
 
     def __init__(self, train_dir, label_file):
         self.train_dir = train_dir
+        self.max_seq_len = 0
         self.files = [f for f in os.listdir(train_dir) if f.endswith('pkl')]
         self.label_dict = self.process_label_file(label_file) # name: label
         self.train_data, self.train_label, self.permutation = self._read_files(train_dir, self.files, self.label_dict)
@@ -30,14 +31,23 @@ class TrainDataset(Dataset):
         train_data = []
         train_label = []
         for i, file in enumerate(files):
+            if i > 5:
+                break
             print('read %s' % file)
             with open(join(train_dir, file), 'rb') as f:
                 data = pickle.load(f)
                 random.shuffle(data)
-                sample_data = data[0:MAX_SIZE]
                 # We load only MAX_SIZE in each iteration to avoid OOM
-                train_data.extend(sample_data)
-                train_label.extend([dict[file.split('.')[0]]] * MAX_SIZE)
+                sample_data = data[0:MAX_SIZE]
+                for sketch in sample_data:
+                    sketch = self._build_line(sketch)
+                    train_data += [sketch]
+                    train_label += [dict[file.split('.')[0]]]
+                    if len(sketch) > self.max_seq_len:
+                        self.max_seq_len = len(sketch)
+
+                # train_data.extend(sample_data)
+                # train_label.extend([dict[file.split('.')[0]]] * MAX_SIZE)
 
         permutation = np.random.permutation(len(train_data))
         return train_data, train_label, permutation
@@ -56,7 +66,6 @@ class TrainDataset(Dataset):
     def __getitem__(self, idx):
         idx = self.permutation[idx]
         sketch = self.train_data[idx]
-        sketch = self._build_line(sketch)
         label = self.train_label[idx]
         sample = {'sketch': sketch, 'label': label}
         return sample
