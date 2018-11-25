@@ -103,3 +103,4 @@ ENV/
 .idea/
 pytorch/result/
 pytorch/ckpt/
+pytorch/data/

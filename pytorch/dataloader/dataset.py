@@ -17,7 +17,7 @@ class TrainDataset(Dataset):
         self.max_seq_len = 0
         self.files = [f for f in os.listdir(train_dir) if f.endswith('pkl')]
         self.label_dict = self.process_label_file(label_file) # name: label
-        self.train_data, self.train_label, self.permutation = self._read_files(train_dir, self.files, self.label_dict)
+        self.train_data = self._read_files(train_dir, self.files, self.label_dict)
 
     def process_label_file(self, label_file):
         dictionary = {}
@@ -29,7 +29,6 @@ class TrainDataset(Dataset):
 
     def _read_files(self, train_dir, files, dict):
         train_data = []
-        train_label = []
         for i, file in enumerate(files):
             print('read %s' % file)
             with open(join(train_dir, file), 'rb') as f:
@@ -39,16 +38,12 @@ class TrainDataset(Dataset):
                 sample_data = data[0:MAX_SIZE]
                 for sketch in sample_data:
                     sketch = self._build_line(sketch)
-                    train_data += [sketch]
-                    train_label += [dict[file.split('.')[0]]]
+                    label = dict[file.split('.')[0]]
+                    train_data += [(sketch, label, len(sketch))]
                     if len(sketch) > self.max_seq_len:
                         self.max_seq_len = len(sketch)
-
-                # train_data.extend(sample_data)
-                # train_label.extend([dict[file.split('.')[0]]] * MAX_SIZE)
-
-        permutation = np.random.permutation(len(train_data))
-        return train_data, train_label, permutation
+        random.shuffle(train_data)
+        return train_data
 
     def reload_pkl_files(self):
         '''
@@ -56,16 +51,18 @@ class TrainDataset(Dataset):
         :return:
         '''
         print('reload dataset')
-        self.train_data, self.train_label, self.permutation = self._read_files(self.train_dir, self.files, self.label_dict)
+        self.train_data = self._read_files(self.train_dir, self.files, self.label_dict)
 
     def __len__(self):
-        return len(self.permutation)
+        return len(self.train_data)
 
     def __getitem__(self, idx):
-        idx = self.permutation[idx]
-        sketch = self.train_data[idx]
-        label = self.train_label[idx]
-        sample = {'sketch': sketch, 'label': label}
+        sketch, label, seq_len = self.train_data[idx]
+
+        pad_sketch = np.zeros(shape=(self.max_seq_len, sketch.shape[1]))
+        pad_sketch[0:sketch.shape[0]] = sketch
+
+        sample = {'sketch': pad_sketch, 'label': label, 'seq_len': seq_len}
         return sample
 
     def _build_line(self, data):

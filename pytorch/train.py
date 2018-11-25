@@ -44,9 +44,9 @@ def train(config):
 
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
 
-    gru = GRU(config.input_size, config.hidden_size, output_size=len(dictionary.keys()), n_layers=config.n_layers)
+    gru = GRU(config.input_size, config.hidden_size, output_size=len(dictionary.keys()), n_layers=config.n_layers).to(device)
 
-    nllLoss = torch.nn.NLLLoss()
+    nllLoss = torch.nn.NLLLoss().to(device)
 
     if config.load_model:
         gru.load_state_dict(torch.load(config.load_model))
@@ -58,20 +58,27 @@ def train(config):
     for epoch in range(1 + config.start_idx, config.epochs + 1):
 
         for i, data in enumerate(train_loader):
-            sketch = data['sketch']
-            label = data['label']
+            sketch = data['sketch'].to(device)
+            label = data['label'].to(device)
+            seq_len = data['seq_len'].to(device)
 
             optim.zero_grad()
 
-            hidden = gru.initHidden(config.batch_size)
+            hidden = gru.initHidden(sketch.shape[0])
 
-            output, hidden = gru(sketch, hidden)
+            output, hidden, new_idx = gru(sketch, hidden, seq_len)
 
-            loss = 0
+            label = label[new_idx]
 
-            print(sketch.shape)
-            print(label.shape)
-            print(output.shape)
+            loss = nllLoss(output, label)
+
+            loss.backward()
+            optim.step()
+
+            if i % 10 == 0:
+                print('loss: %.4f' % (loss.item()))
+
+
 
         if epoch < config.epochs:
             train_dataset.reload_pkl_files()
@@ -82,8 +89,10 @@ if __name__ == '__main__':
 
     parser.add_argument('--ckpt_path', type=str, default='ckpt/gru')
     parser.add_argument('--result_path', type=str, default='result/gru')
-    parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
-    parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train')
+    # parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
+    # parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train')
+    parser.add_argument('--label_file', type=str, default='data/label.csv')
+    parser.add_argument('--train_dir', type=str, default='data/')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--input_size', type=int, default=3)
     parser.add_argument('--hidden_size', type=int, default=100)
