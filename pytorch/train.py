@@ -118,13 +118,13 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_path', type=str, default='ckpt/gru')
     parser.add_argument('--result_path', type=str, default='result/gru')
 
-    parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
-    parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train')
-    parser.add_argument('--test_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/test')
+    # parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
+    # parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train')
+    # parser.add_argument('--test_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/test')
 
-    # parser.add_argument('--label_file', type=str, default='data/label.csv')
-    # parser.add_argument('--train_dir', type=str, default='data/')
-    # parser.add_argument('--test_dir', type=str, default='data/')
+    parser.add_argument('--label_file', type=str, default='data/label.csv')
+    parser.add_argument('--train_dir', type=str, default='data/')
+    parser.add_argument('--test_dir', type=str, default='data/')
 
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--input_size', type=int, default=3)

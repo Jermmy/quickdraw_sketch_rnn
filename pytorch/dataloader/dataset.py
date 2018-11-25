@@ -6,8 +6,9 @@ from os.path import join, exists
 import numpy as np
 import pickle
 import random
+from tqdm import tqdm
 
-MAX_SIZE = 1000
+MAX_SIZE = 5000
 
 def build_line(sketch):
     sketch_lines = []
@@ -51,8 +52,7 @@ class TrainDataset(Dataset):
 
     def _read_files(self, train_dir, files, dict):
         train_data = []
-        for i, file in enumerate(files):
-            # print('read %s' % file)
+        for file in tqdm(files):
             with open(join(train_dir, file), 'rb') as f:
                 data = pickle.load(f)
                 random.shuffle(data)
