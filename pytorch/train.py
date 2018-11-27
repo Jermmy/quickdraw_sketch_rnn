@@ -7,19 +7,11 @@ from tensorboardX import SummaryWriter
 import os
 from os.path import join, exists
 
-from dataloader.dataset import TrainDataset, TestDataset
-from model.sketch_rnn import GRU
+from tqdm import tqdm
+
+from dataloader.dataset import TrainDataset, TestDataset, process_label_file
+from model.sketch_rnn import SketchRNN
 from utils.metrics import mapk, apk
-
-
-def parse_label(label_file):
-    dictionary, reverse_dict = {}, {}
-    with open(label_file, 'r') as f:
-        for line in f.readlines():
-            line = line.strip().split(',')
-            dictionary[line[0]] = int(line[1])
-            reverse_dict[int(line[1])] = line[0]
-    return dictionary, reverse_dict
 
 
 def train(config):
@@ -38,76 +30,83 @@ def train(config):
 
     writer = SummaryWriter(config.result_path)
 
-    dictionary, _ = parse_label(config.label_file)
+    dictionary, _ = process_label_file(config.label_file)
 
     train_dataset = TrainDataset(config.train_dir, config.label_file)
-    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
+                              num_workers=config.num_workers, drop_last=True)
 
     test_dataset = TestDataset(config.test_dir, config.label_file)
-    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False,
+                             num_workers=1, drop_last=True)
 
-    gru = GRU(config.input_size, config.hidden_size, output_size=len(dictionary.keys()), n_layers=config.n_layers).to(device)
+    sketchrnn = SketchRNN(config.input_size, config.hidden_size, output_size=len(dictionary.keys()),
+              n_layers=config.n_layers, device=device, avg_out=True, rnn_type=config.rnn_type).to(device)
 
-    nllLoss = torch.nn.NLLLoss().to(device)
+    # criterion = torch.nn.NLLLoss().to(device)
+    criterion = torch.nn.CrossEntropyLoss().to(device)
 
     if config.load_model:
-        gru.load_state_dict(torch.load(config.load_model))
+        sketchrnn.load_state_dict(torch.load(config.load_model))
 
     lr = config.lr
 
-    optim = torch.optim.RMSprop(params=gru.parameters(), lr=lr)
+    optim = torch.optim.RMSprop(params=sketchrnn.parameters(), lr=lr)
 
     for epoch in range(1 + config.start_idx, config.epochs + 1):
 
         # ===================== Train =================================
 
-        for i, data in enumerate(train_loader):
+        for i, data in enumerate(tqdm(train_loader)):
             sketch = data['sketch'].to(device)
             label = data['label'].to(device)
             seq_len = data['seq_len'].to(device)
 
             optim.zero_grad()
 
-            hidden = gru.initHidden(sketch.shape[0])
+            hidden = sketchrnn.initHidden(sketch.shape[0]).to(device)
 
-            output, hidden, new_idx = gru(sketch, hidden, seq_len)
+            output, hidden, new_idx = sketchrnn(sketch, hidden, seq_len)
 
             label = label[new_idx]
 
-            loss = nllLoss(output, label)
+            loss = criterion(output, label)
 
             loss.backward()
             optim.step()
 
-            if i % 10 == 0:
-                print('loss: %.4f' % (loss.item()))
+            if i % 100 == 0:
+                predict = np.argsort(output.detach().cpu().numpy(), axis=1)[:, ::-1][:,0:3].tolist()
+                actual = [[l] for l in label.detach().cpu().numpy().tolist()]
+                print('loss: %.4f, accuracy: %.4f' % (loss.item(), mapk(actual, predict)))
 
             if i % 1000 == 0:
                 writer.add_scalar('loss', loss.item(), (epoch - 1) * len(train_loader) + i)
 
         # ======================= Evaluation =============================
-        gru.eval()
+        print('Evaluation')
+        sketchrnn.eval()
         actuals, predicts = [], []
         for data in test_loader:
             sketch = data['sketch'].to(device)
             label = data['label'].to(device)
-            seq_len = data['label'].to(device)
-            hidden = gru.initHidden(sketch.shape[0])
-            output, hidden, new_idx = gru(sketch, hidden, seq_len)
-            label = label[new_idx].detach().numpy().reshape(-1, 1).tolist()
+            seq_len = data['seq_len'].to(device)
+            hidden = sketchrnn.initHidden(sketch.shape[0]).to(device)
+            output, hidden, new_idx = sketchrnn(sketch, hidden, seq_len)
+            label = label[new_idx].detach().cpu().numpy().reshape(-1, 1).tolist()
             actuals.extend(label)
-            predict = np.argsort(output.detach().numpy(), axis=1)[:, ::-1][:,0:3].tolist()
+            predict = np.argsort(output.detach().cpu().numpy(), axis=1)[:, ::-1][:,0:3].tolist()
             predicts.extend(predict)
 
         accuracy = mapk(actuals, predicts, k=3)
         print('accuracy: %.3f' % (accuracy))
         writer.add_scalar('accuracy', accuracy, epoch)
-        gru.train()
+        sketchrnn.train()
 
-        if epoch % 2 == 0:
+        if epoch % 20 == 0:
             train_dataset.reload_pkl_files()
 
-        torch.save(gru.state_dict(), join(config.ckpt_path, 'epoch-%d.pkl' % epoch))
+        torch.save(sketchrnn.state_dict(), join(config.ckpt_path, 'epoch-%d.pkl' % epoch))
 
     writer.close()
 
@@ -118,13 +117,13 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_path', type=str, default='ckpt/gru')
     parser.add_argument('--result_path', type=str, default='result/gru')
 
-    # parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
-    # parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train')
-    # parser.add_argument('--test_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/test')
+    parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
+    parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train')
+    parser.add_argument('--test_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/test')
 
-    parser.add_argument('--label_file', type=str, default='data/label.csv')
-    parser.add_argument('--train_dir', type=str, default='data/')
-    parser.add_argument('--test_dir', type=str, default='data/')
+    # parser.add_argument('--label_file', type=str, default='data/label.csv')
+    # parser.add_argument('--train_dir', type=str, default='data/')
+    # parser.add_argument('--test_dir', type=str, default='data/')
 
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--input_size', type=int, default=3)
@@ -134,7 +133,9 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--start_idx', type=int, default=0)
     parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--num_workers', type=int, default=8)
+    parser.add_argument('--num_workers', type=int, default=6)
+
+    parser.add_argument('--rnn_type', type=str, default='gru')
 
     config = parser.parse_args()
     train(config)

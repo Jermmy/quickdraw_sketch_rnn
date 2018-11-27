@@ -46,7 +46,7 @@ def load_data_files():
     return data_files
 
 
-class SketchLoader():
+class SketchLoader:
 
     def __init__(self, batch_size=50, epoch=5):
         self.batch_size = batch_size

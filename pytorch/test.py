@@ -47,3 +47,14 @@ bz = bz.repeat(1, 1, 2)
 print(bz)
 out = torch.gather(out, 1, bz)
 print('333', out)
+
+
+
+a = torch.Tensor([[[1, 2, 3], [1,2,1]], [[1, 2, 4], [0, 0, 0]]])
+seq = torch.Tensor([2, 1])
+seq = seq.view((a.shape[0], 1))
+b = torch.sum(a, dim=1)
+c = torch.div(b, seq)
+print(a)
+print(b)
+print(c)

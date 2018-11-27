@@ -18,13 +18,11 @@ class SketchRNN():
         self.cell_hidden = cell_hidden
         self.fc_hidden = 200
 
-
     def train(self, x, y, seq_len):
         pred = self._network(x, seq_len)
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             logits=pred, labels=tf.one_hot(y, self.n_class)))
         return pred, loss
-
 
     def _network(self, x, seq_len, reuse=False):
         with tf.variable_scope("sketch_rnn") as scope:
@@ -41,7 +39,6 @@ class SketchRNN():
         pred = self._network(x, seq_len, reuse)
         pred = tf.nn.softmax(pred)
         return pred
-
 
     def _dynamic_rnn(self, x, seq_len, batch_size, max_seq_len):
 
@@ -63,7 +60,6 @@ class SketchRNN():
             outputs = tf.reduce_sum(outputs, axis=1)
             outputs = tf.divide(outputs, tf.cast(seq_len[:, None], tf.float32))
             # outputs = tf.Print(outputs, [tf.shape(outputs)], message="output shape")
-
 
         fc1 = tf.layers.dense(outputs, self.fc_hidden, name="fc1")
         fc2 = tf.layers.dense(fc1, self.n_class, name="fc2")

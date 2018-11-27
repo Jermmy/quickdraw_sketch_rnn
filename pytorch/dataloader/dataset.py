@@ -2,13 +2,15 @@ import torch
 from torch.utils.data import Dataset
 
 import os
-from os.path import join, exists
+from os.path import join
 import numpy as np
 import pickle
 import random
 from tqdm import tqdm
 
-MAX_SIZE = 5000
+MAX_SIZE = 50000
+TEST_SIZE = 1000
+
 
 def build_line(sketch):
     sketch_lines = []
@@ -34,12 +36,14 @@ def build_line(sketch):
 
 
 def process_label_file(label_file):
-    dictionary = {}
+    dictionary, reverse_dict = {}, {}
     with open(label_file, 'r') as f:
         for line in f.readlines():
             line = line.strip().split(',')
             dictionary[line[0]] = int(line[1])
-    return dictionary
+            reverse_dict[int(line[1])] = line[0]
+    return dictionary, reverse_dict
+
 
 class TrainDataset(Dataset):
 
@@ -47,7 +51,7 @@ class TrainDataset(Dataset):
         self.train_dir = train_dir
         self.max_seq_len = 0
         self.files = [f for f in os.listdir(train_dir) if f.endswith('pkl')]
-        self.label_dict = process_label_file(label_file) # name: label
+        self.label_dict, _ = process_label_file(label_file) # name: label
         self.train_data = self._read_files(train_dir, self.files, self.label_dict)
 
     def _read_files(self, train_dir, files, dict):
@@ -60,8 +64,12 @@ class TrainDataset(Dataset):
                 sample_data = data[0:MAX_SIZE]
                 for sketch in sample_data:
                     sketch = build_line(sketch)
+                    if len(sketch) <= 0:
+                        print('error sketch: ', str(sketch))
+                        continue
                     label = dict[file.split('.')[0]]
                     train_data += [(sketch, label, len(sketch))]
+
                     if len(sketch) > self.max_seq_len:
                         self.max_seq_len = len(sketch)
         random.shuffle(train_data)
@@ -94,19 +102,23 @@ class TestDataset(Dataset):
         self.test_dir = test_dir
         self.max_seq_len = 0
         self.files = [f for f in os.listdir(test_dir) if f.endswith('pkl')]
-        self.label_dict = process_label_file(label_file) # name: label
+        self.label_dict, _ = process_label_file(label_file) # name: label
         self.test_data = self._read_files(test_dir, self.files, self.label_dict)
 
     def _read_files(self, test_dir, files, dict):
         test_data = []
-        for i, file in enumerate(files):
+        for file in tqdm(files):
             # print('read %s' % file)
             with open(join(test_dir, file), 'rb') as f:
                 data = pickle.load(f)
-                # We load only MAX_SIZE in each iteration to avoid OOM
-                sample_data = data[0:1000]
+                # We load only TEST_SIZE in each iteration to avoid OOM
+                random.shuffle(data)
+                sample_data = data[0:TEST_SIZE]
                 for sketch in sample_data:
                     sketch = build_line(sketch)
+                    if len(sketch) <= 0:
+                        print('error sketch: ', str(sketch))
+                        continue
                     label = dict[file.split('.')[0]]
                     test_data += [(sketch, label, len(sketch))]
                     if len(sketch) > self.max_seq_len:
