@@ -8,7 +8,7 @@ import pickle
 import random
 from tqdm import tqdm
 
-MAX_SIZE = 50000
+MAX_SIZE = 20000
 TEST_SIZE = 1000
 
 

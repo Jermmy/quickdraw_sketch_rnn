@@ -171,7 +171,6 @@ class SketchConvRNN():
         pred = tf.nn.softmax(pred)
         return pred
 
-
     def _network(self, x, seq_len, reuse=False, is_training=False):
         with tf.variable_scope("sketchconvrnn") as scope:
             if reuse:

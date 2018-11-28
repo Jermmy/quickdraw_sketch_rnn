@@ -4,31 +4,58 @@ import torch
 
 class SketchRNN(nn.Module):
 
-    def __init__(self, input_size, hidden_size, output_size, n_layers, rnn_type='gru', bi_rnn=False, avg_out=False, device=torch.device('cpu')):
+    def __init__(self, input_size,
+                 hidden_size,
+                 output_size,
+                 n_layers,
+                 rnn_type='gru',
+                 bi_rnn=False,
+                 avg_out=False,
+                 use_conv=False,
+                 device=torch.device('cpu')):
         super(SketchRNN, self).__init__()
         self.device = device
         self.rnn_type = rnn_type
         self.n_layers = n_layers
+        self.input_size = input_size
         self.hidden_size = hidden_size
         self.bi_rnn = bi_rnn
         self.avg_out = avg_out
-        if rnn_type == 'gru':
-            self.model = nn.GRU(input_size, hidden_size, n_layers, bidirectional=bi_rnn)
-        elif rnn_type == 'vanilla':
-            self.model = nn.RNN(input_size, hidden_size, n_layers, bidirectional=bi_rnn)
-        elif rnn_type == 'lstm':
-            self.model = nn.LSTM(input_size, hidden_size, n_layers, bidirectional=bi_rnn)
-        self.h2o = nn.Linear(hidden_size, output_size)
-        # self.logSoftmax = nn.LogSoftmax()
+        self.use_conv = use_conv
 
-    def forward(self, x, hidden, seq_len):
+        if self.use_conv:
+            self.convLayer = nn.Sequential(
+                nn.Conv1d(in_channels=input_size, out_channels=48, kernel_size=3, stride=1, padding=1),
+                nn.Tanh(),
+                nn.Conv1d(in_channels=48, out_channels=64, kernel_size=3, stride=1, padding=1),
+                nn.Tanh()
+            )
+            self.input_size = 64
+
+        if rnn_type == 'gru':
+            self.model = nn.GRU(self.input_size, hidden_size, n_layers, bidirectional=bi_rnn)
+        elif rnn_type == 'vanilla':
+            self.model = nn.RNN(self.input_size, hidden_size, n_layers, bidirectional=bi_rnn)
+        elif rnn_type == 'lstm':
+            self.model = nn.LSTM(self.input_size, hidden_size, n_layers, bidirectional=bi_rnn)
+        self.h2o = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x, seq_len, hidden=None):
         '''
-        :param x: batch_size x seq_len x input_size
+        :param x: batch_size * seq_len * input_size
         :param hidden:
         :param seq_len:
         :return:
         '''
-        # batch_size x seq_len x input_size --> seq_len x batch_size x input_size
+
+        if self.use_conv:
+            # batch_size * seq_len * input_size --> batch_size * input_size(channel) * seq_len
+            x = x.permute((0, 2, 1))
+            x = self.convLayer(x)
+            # batch_size * input_size(channel) * seq_len --> batch_size * seq_len * input_size
+            x = x.permute((0, 2, 1))
+
+        # batch_size * seq_len * input_size --> seq_len * batch_size * input_size
         x = x.permute((1, 0, 2))
         # Sort seq_len
         desc_seq_len, order_idx = torch.sort(seq_len, descending=True)
@@ -45,9 +72,11 @@ class SketchRNN(nn.Module):
         # seq_len x batch_size x hidden_size --> batch_size x seq_len x hidden_size
         output = output.permute((1, 0, 2))
 
+        if self.bi_rnn:
+            output = output.view(output.shape[0], output.shape[1], 2, self.hidden_size)
+            output = (output[:, :, 0, :] + output[:, :, 1, :]) / 2
+
         if self.avg_out:
-            # output = torch.mean(output, dim=1)
-            # output = output.squeeze(1)
             output = torch.sum(output, dim=1)
             bz = bz.view(bz.shape[0], 1).float().to(self.device)
             output = torch.div(output, bz)
@@ -62,14 +91,10 @@ class SketchRNN(nn.Module):
 
             row = torch.arange(0, output.shape[0]).long()
             index = bz - 1
-            # print(index)
-            # print(output.shape)
             output = output[row, index, :]
-            # print(output.shape)
 
         output = self.h2o(output)
-        # output = self.logSoftmax(output)
-        return output, hidden, order_idx
+        return output, order_idx
 
     def initHidden(self, batch_size):
         return torch.zeros(self.n_layers, batch_size, self.hidden_size)
