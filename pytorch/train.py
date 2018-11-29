@@ -107,11 +107,11 @@ def train(config):
         writer.add_scalar('accuracy', accuracy, epoch)
         sketchrnn.train()
 
-        if epoch % 5 == 0:
+        if epoch % 20 == 0:
             lr /= 10
             optim = torch.optim.RMSprop(params=sketchrnn.parameters(), lr=lr)
 
-        if epoch % 20 == 0:
+        if epoch % 5 == 0:
             train_dataset.reload_pkl_files()
 
         torch.save(sketchrnn.state_dict(), join(config.ckpt_path, 'epoch-%d.pkl' % epoch))
