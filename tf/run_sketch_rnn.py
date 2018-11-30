@@ -8,13 +8,14 @@ import numpy as np
 saving_model = True
 loading_model = False
 
+
 def accuracy(prediction, label):
     correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(label, 1))
     return tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 
 if __name__ == '__main__':
-    batch_size = 100
+    batch_size = 128
     epoch = 5
     dictionary, reverse_dict = get_sketch_labels()
     n_class = len(dictionary)
@@ -25,13 +26,13 @@ if __name__ == '__main__':
 
     sketch, label, sketch_len = iterator.get_next()
 
-    sketchrnn = online_model(n_class=n_class, cell_hidden=[128, 128])
+    sketchrnn = online_model(n_class=n_class, cell_hidden=[256, 512])
     pred, cost = sketchrnn.train(sketch, label, sketch_len)
 
     batch_acc = accuracy(tf.nn.softmax(pred), tf.one_hot(label, n_class))
 
     global_step = tf.Variable(0, trainable=False)
-    starter_learning_rate = 0.0001
+    starter_learning_rate = 0.001
     learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, 2000, 0.7, staircase=True)
     # optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
     optimizer = tf.contrib.layers.optimize_loss(
@@ -40,7 +41,7 @@ if __name__ == '__main__':
         learning_rate=learning_rate,
         optimizer=tf.train.RMSPropOptimizer,
         clip_gradients=9.0,
-        summaries=["learning_rate", "loss", "gradients"]
+        summaries=["learning_rate", "loss"]
     )
 
     tf.summary.scalar("loss", cost)
@@ -48,7 +49,9 @@ if __name__ == '__main__':
     # # tf.summary.scalar("valid_acc", valid_acc)
     merged_summary_op = tf.summary.merge_all()
 
-    with tf.Session() as sess:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
         saver = tf.train.Saver()
         summary_writer = tf.summary.FileWriter(log_dir, graph=tf.get_default_graph())
 
@@ -65,23 +68,8 @@ if __name__ == '__main__':
 
                 summary_writer.add_summary(summary, step)
 
-                if step % 100 == 0:
-                    print("Minibatch at step %d ===== loss: %.2f, acc: %.2f" % (step, l, acc))
                 if step % 500 == 0:
-                    valid_accs = []
-                    try:
-                        valid_iterator = sl.valid_dataset.make_one_shot_iterator()
-                        valid_sketch, valid_label, valid_sketch_len = valid_iterator.get_next()
-                        valid_pred = sketchrnn.inference(valid_sketch, valid_sketch_len, reuse=True)
-                        valid_acc = accuracy(valid_pred, tf.one_hot(valid_label, n_class))
-                        while True:
-                            [acc] = sess.run([valid_acc])
-                            # summary_writer.add_summary(summary, step)
-                            # print("validation dataset ===== acc: %.2f" % (acc))
-                            valid_accs.append(acc)
-                    except tf.errors.OutOfRangeError:
-                        # pass
-                        print("validation dataset ===== acc: %.2f" % (np.mean(valid_accs)))
+                    print("Minibatch at step %d ===== loss: %.2f, acc: %.2f" % (step, l, acc))
 
                 if (step + 1) % 1000 == 0 and saving_model:
                     save_path = saver.save(sess, model_file)
@@ -97,7 +85,7 @@ if __name__ == '__main__':
             test_acc = accuracy(test_pred, tf.one_hot(test_label, n_class))
             try:
                 while True:
-                    [acc] = sess.run([test_acc])
+                    acc = sess.run(test_acc)
                     # print("test dataset ===== acc: %.2f" % (acc))
                     test_accs.append(acc)
             except tf.errors.OutOfRangeError:

@@ -1,0 +1,173 @@
+Minibatch at step 0 ===== loss: 5.83, acc: 0.00
+Minibatch at step 500 ===== loss: 4.95, acc: 0.04
+Model saved in model/model1/model.ckpt
+Minibatch at step 1000 ===== loss: 3.80, acc: 0.16
+Minibatch at step 1500 ===== loss: 2.84, acc: 0.27
+Model saved in model/model1/model.ckpt
+Minibatch at step 2000 ===== loss: 2.43, acc: 0.38
+Minibatch at step 2500 ===== loss: 1.87, acc: 0.57
+Model saved in model/model1/model.ckpt
+Minibatch at step 3000 ===== loss: 1.82, acc: 0.49
+Minibatch at step 3500 ===== loss: 1.70, acc: 0.52
+Model saved in model/model1/model.ckpt
+Minibatch at step 4000 ===== loss: 1.62, acc: 0.57
+Minibatch at step 4500 ===== loss: 1.71, acc: 0.55
+Model saved in model/model1/model.ckpt
+Minibatch at step 5000 ===== loss: 1.29, acc: 0.66
+Minibatch at step 5500 ===== loss: 1.15, acc: 0.66
+Model saved in model/model1/model.ckpt
+Minibatch at step 6000 ===== loss: 1.54, acc: 0.59
+Minibatch at step 6500 ===== loss: 0.95, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 7000 ===== loss: 1.19, acc: 0.70
+Minibatch at step 7500 ===== loss: 1.56, acc: 0.60
+Model saved in model/model1/model.ckpt
+Minibatch at step 8000 ===== loss: 1.31, acc: 0.70
+Minibatch at step 8500 ===== loss: 1.37, acc: 0.66
+Model saved in model/model1/model.ckpt
+Minibatch at step 9000 ===== loss: 1.17, acc: 0.70
+Minibatch at step 9500 ===== loss: 1.12, acc: 0.74
+Model saved in model/model1/model.ckpt
+Minibatch at step 10000 ===== loss: 1.35, acc: 0.60
+Minibatch at step 10500 ===== loss: 1.26, acc: 0.66
+Model saved in model/model1/model.ckpt
+Minibatch at step 11000 ===== loss: 1.18, acc: 0.68
+Minibatch at step 11500 ===== loss: 0.98, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 12000 ===== loss: 1.12, acc: 0.68
+Minibatch at step 12500 ===== loss: 1.33, acc: 0.64
+Model saved in model/model1/model.ckpt
+Minibatch at step 13000 ===== loss: 1.23, acc: 0.70
+Minibatch at step 13500 ===== loss: 1.16, acc: 0.62
+Model saved in model/model1/model.ckpt
+Minibatch at step 14000 ===== loss: 0.99, acc: 0.71
+Minibatch at step 14500 ===== loss: 0.81, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 15000 ===== loss: 1.00, acc: 0.70
+Minibatch at step 15500 ===== loss: 0.95, acc: 0.77
+Model saved in model/model1/model.ckpt
+Minibatch at step 16000 ===== loss: 0.95, acc: 0.78
+Minibatch at step 16500 ===== loss: 0.91, acc: 0.71
+Model saved in model/model1/model.ckpt
+Minibatch at step 17000 ===== loss: 0.99, acc: 0.73
+Minibatch at step 17500 ===== loss: 1.10, acc: 0.69
+Model saved in model/model1/model.ckpt
+Minibatch at step 18000 ===== loss: 0.77, acc: 0.77
+Minibatch at step 18500 ===== loss: 0.93, acc: 0.74
+Model saved in model/model1/model.ckpt
+Minibatch at step 19000 ===== loss: 1.16, acc: 0.66
+Minibatch at step 19500 ===== loss: 1.03, acc: 0.73
+Model saved in model/model1/model.ckpt
+Minibatch at step 20000 ===== loss: 1.14, acc: 0.69
+Minibatch at step 20500 ===== loss: 1.19, acc: 0.69
+Model saved in model/model1/model.ckpt
+Minibatch at step 21000 ===== loss: 1.08, acc: 0.70
+Minibatch at step 21500 ===== loss: 1.12, acc: 0.67
+Model saved in model/model1/model.ckpt
+Minibatch at step 22000 ===== loss: 1.16, acc: 0.70
+Minibatch at step 22500 ===== loss: 0.86, acc: 0.76
+Model saved in model/model1/model.ckpt
+Minibatch at step 23000 ===== loss: 0.94, acc: 0.75
+Minibatch at step 23500 ===== loss: 1.05, acc: 0.68
+Model saved in model/model1/model.ckpt
+Minibatch at step 24000 ===== loss: 1.15, acc: 0.68
+Minibatch at step 24500 ===== loss: 0.73, acc: 0.77
+Model saved in model/model1/model.ckpt
+Minibatch at step 25000 ===== loss: 0.84, acc: 0.77
+Minibatch at step 25500 ===== loss: 0.80, acc: 0.76
+Model saved in model/model1/model.ckpt
+Minibatch at step 26000 ===== loss: 1.06, acc: 0.71
+Minibatch at step 26500 ===== loss: 0.93, acc: 0.74
+Model saved in model/model1/model.ckpt
+Minibatch at step 27000 ===== loss: 1.04, acc: 0.69
+Minibatch at step 27500 ===== loss: 0.89, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 28000 ===== loss: 1.14, acc: 0.62
+Minibatch at step 28500 ===== loss: 1.01, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 29000 ===== loss: 1.15, acc: 0.67
+Minibatch at step 29500 ===== loss: 0.87, acc: 0.73
+Model saved in model/model1/model.ckpt
+Minibatch at step 30000 ===== loss: 0.90, acc: 0.74
+Minibatch at step 30500 ===== loss: 0.95, acc: 0.73
+Model saved in model/model1/model.ckpt
+Minibatch at step 31000 ===== loss: 0.80, acc: 0.74
+Minibatch at step 31500 ===== loss: 0.80, acc: 0.77
+Model saved in model/model1/model.ckpt
+Minibatch at step 32000 ===== loss: 0.96, acc: 0.73
+Minibatch at step 32500 ===== loss: 1.08, acc: 0.71
+Model saved in model/model1/model.ckpt
+Minibatch at step 33000 ===== loss: 0.84, acc: 0.73
+Minibatch at step 33500 ===== loss: 0.95, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 34000 ===== loss: 1.34, acc: 0.62
+Minibatch at step 34500 ===== loss: 0.85, acc: 0.74
+Model saved in model/model1/model.ckpt
+Minibatch at step 35000 ===== loss: 0.99, acc: 0.70
+Minibatch at step 35500 ===== loss: 1.34, acc: 0.67
+Model saved in model/model1/model.ckpt
+Minibatch at step 36000 ===== loss: 1.02, acc: 0.71
+Minibatch at step 36500 ===== loss: 0.83, acc: 0.77
+Model saved in model/model1/model.ckpt
+Minibatch at step 37000 ===== loss: 1.12, acc: 0.69
+Minibatch at step 37500 ===== loss: 1.05, acc: 0.68
+Model saved in model/model1/model.ckpt
+Minibatch at step 38000 ===== loss: 1.08, acc: 0.71
+Minibatch at step 38500 ===== loss: 1.04, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 39000 ===== loss: 0.82, acc: 0.78
+Minibatch at step 39500 ===== loss: 1.09, acc: 0.73
+Model saved in model/model1/model.ckpt
+Minibatch at step 40000 ===== loss: 1.01, acc: 0.76
+Minibatch at step 40500 ===== loss: 0.99, acc: 0.70
+Model saved in model/model1/model.ckpt
+Minibatch at step 41000 ===== loss: 1.15, acc: 0.72
+Minibatch at step 41500 ===== loss: 0.90, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 42000 ===== loss: 1.08, acc: 0.70
+Minibatch at step 42500 ===== loss: 0.99, acc: 0.72
+Model saved in model/model1/model.ckpt
+Minibatch at step 43000 ===== loss: 0.85, acc: 0.75
+Minibatch at step 43500 ===== loss: 1.11, acc: 0.66
+Model saved in model/model1/model.ckpt
+Minibatch at step 44000 ===== loss: 0.94, acc: 0.71
+Minibatch at step 44500 ===== loss: 1.00, acc: 0.71
+Model saved in model/model1/model.ckpt
+Minibatch at step 45000 ===== loss: 1.06, acc: 0.73
+Minibatch at step 45500 ===== loss: 0.86, acc: 0.77
+Model saved in model/model1/model.ckpt
+Minibatch at step 46000 ===== loss: 0.93, acc: 0.74
+Minibatch at step 46500 ===== loss: 0.90, acc: 0.74
+Model saved in model/model1/model.ckpt
+Minibatch at step 47000 ===== loss: 0.85, acc: 0.73
+Minibatch at step 47500 ===== loss: 0.97, acc: 0.69
+Model saved in model/model1/model.ckpt
+Minibatch at step 48000 ===== loss: 0.92, acc: 0.73
+Minibatch at step 48500 ===== loss: 0.99, acc: 0.73
+Model saved in model/model1/model.ckpt
+Minibatch at step 49000 ===== loss: 0.88, acc: 0.77
+Minibatch at step 49500 ===== loss: 1.12, acc: 0.65
+Model saved in model/model1/model.ckpt
+Minibatch at step 50000 ===== loss: 0.94, acc: 0.71
+Minibatch at step 50500 ===== loss: 1.22, acc: 0.68
+Model saved in model/model1/model.ckpt
+Minibatch at step 51000 ===== loss: 0.79, acc: 0.78
+Minibatch at step 51500 ===== loss: 0.80, acc: 0.78
+Model saved in model/model1/model.ckpt
+Minibatch at step 52000 ===== loss: 1.03, acc: 0.72
+Minibatch at step 52500 ===== loss: 0.94, acc: 0.74
+Model saved in model/model1/model.ckpt
+Minibatch at step 53000 ===== loss: 1.05, acc: 0.68
+Minibatch at step 53500 ===== loss: 1.03, acc: 0.67
+Model saved in model/model1/model.ckpt
+Minibatch at step 54000 ===== loss: 1.09, acc: 0.68
+Minibatch at step 54500 ===== loss: 1.08, acc: 0.71
+Model saved in model/model1/model.ckpt
+Minibatch at step 55000 ===== loss: 1.11, acc: 0.68
+Minibatch at step 55500 ===== loss: 1.07, acc: 0.68
+Model saved in model/model1/model.ckpt
+Minibatch at step 56000 ===== loss: 1.01, acc: 0.73
+Minibatch at step 56500 ===== loss: 0.84, acc: 0.78
+Model saved in model/model1/model.ckpt
+Minibatch at step 57000 ===== loss: 1.09, acc: 0.70
+Minibatch at step 57500 ===== loss: 0.98, acc: 0.78

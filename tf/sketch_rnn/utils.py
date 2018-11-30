@@ -46,34 +46,34 @@ def load_data_files():
 
     return data_files
 
+def build_line(drawing):
+
+    sketch_lines = []
+    for stroke in drawing:
+        X = stroke[0]
+        Y = stroke[1]
+
+        for (x, y) in zip(X, Y):
+            sketch_lines.append([x, y, 0])
+
+        sketch_lines[-1][2] = 1  # end of stroke
+
+    sketch_lines = np.array(sketch_lines, dtype=np.float32)
+
+    lower = np.min(sketch_lines[:, 0:2], axis=0)
+    upper = np.max(sketch_lines[:, 0:2], axis=0)
+    scale = upper - lower
+    scale[scale == 0] = 1
+    sketch_lines[:, 0:2] = (sketch_lines[:, 0:2] - lower) / scale
+
+    sketch_lines[1:, 0:2] -= sketch_lines[0:-1, 0:2]
+    # sketch_lines[-1, 3] = 1  # end of drawing
+    # sketch_lines[0] = [0, 0, 0, 0]   # start at origin
+
+    return sketch_lines[1:]
+
 
 def preprocess(train_data_size=train_data_size, test_data_size=test_data_size):
-
-    def build_line(drawing):
-
-        sketch_lines = []
-        for stroke in drawing:
-            X = stroke[0]
-            Y = stroke[1]
-
-            for (x, y) in zip(X, Y):
-                sketch_lines.append([x, y, 0])
-
-            sketch_lines[-1][2] = 1  # end of stroke
-
-        sketch_lines = np.array(sketch_lines, dtype=np.float32)
-
-        lower = np.min(sketch_lines[:, 0:2], axis=0)
-        upper = np.max(sketch_lines[:, 0:2], axis=0)
-        scale = upper - lower
-        scale[scale == 0] = 1
-        sketch_lines[:, 0:2] = (sketch_lines[:, 0:2] - lower) / scale
-
-        sketch_lines[1:, 0:2] -= sketch_lines[0:-1, 0:2]
-        # sketch_lines[-1, 3] = 1  # end of drawing
-        # sketch_lines[0] = [0, 0, 0, 0]   # start at origin
-
-        return sketch_lines[1:]
 
     def int64_feature(value):
         return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
@@ -222,7 +222,6 @@ class SketchLoader:
         train_dataset = tf.data.TFRecordDataset(train_files). \
             map(parse_record, num_parallel_calls=8). \
             padded_batch(self.batch_size, padded_shapes=([None, self.feature_size], [], [])). \
-            shuffle(5000). \
             repeat(self.epoch)
         test_dataset = tf.data.TFRecordDataset(test_files).map(parse_record). \
             padded_batch(self.batch_size, padded_shapes=([None, self.feature_size], [], [])).repeat(1)
@@ -231,11 +230,11 @@ class SketchLoader:
 
 
 if __name__ == '__main__':
-    generate_label_file()
+    # generate_label_file()
 
-    preprocess(train_data_size, test_data_size)
+    # preprocess(train_data_size, test_data_size)
 
-    sl = SketchLoader(batch_size=7600, epoch=1)
+    sl = SketchLoader(batch_size=100, epoch=1)
 
     iterator = sl.train_dataset.make_one_shot_iterator()
     sketch, label, sketch_len = iterator.get_next()

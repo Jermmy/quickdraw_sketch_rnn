@@ -14,11 +14,11 @@ sketch_label_file = preprocessed_data_dir + "label.csv"
 train_data_size = 340 * 50000
 test_data_size = 340 * 1000
 
-# model = 1  # GRU RNN with last output states
+model = 1  # GRU RNN with last output states
 # model = 2  # GRU RNN with mean output states
 # model = 3  # GRU BiRNN with last output states
 # model = 4  # GRU BiRNN with mean output states
-model = 5  # GRU BiRNN + CNN
+# model = 5  # GRU BiRNN + CNN
 
 model_dir = join('model', "model" + str(model))
 log_dir = join('result', "log" + str(model))
