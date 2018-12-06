@@ -4,7 +4,7 @@ from tensorflow.contrib.rnn import GRUCell, DropoutWrapper, MultiRNNCell
 from .config import model
 
 
-class SketchRNN():
+class SketchRNN:
 
     def __init__(self, n_class, cell_hidden=[128, ], avg_output=False):
 
@@ -16,15 +16,12 @@ class SketchRNN():
         self.n_class = n_class
         self.avg_output = avg_output
         self.cell_hidden = cell_hidden
-        self.fc_hidden = 200
-
 
     def train(self, x, y, seq_len):
         pred = self._network(x, seq_len)
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             logits=pred, labels=tf.one_hot(y, self.n_class)))
         return pred, loss
-
 
     def _network(self, x, seq_len, reuse=False):
         with tf.variable_scope("sketch_rnn") as scope:
@@ -41,7 +38,6 @@ class SketchRNN():
         pred = self._network(x, seq_len, reuse)
         pred = tf.nn.softmax(pred)
         return pred
-
 
     def _dynamic_rnn(self, x, seq_len, batch_size, max_seq_len):
 
@@ -64,15 +60,14 @@ class SketchRNN():
             outputs = tf.divide(outputs, tf.cast(seq_len[:, None], tf.float32))
             # outputs = tf.Print(outputs, [tf.shape(outputs)], message="output shape")
 
+        fc = tf.layers.dense(outputs, 1000)
+        fc = tf.nn.leaky_relu(fc, 0.2)
+        fc = tf.layers.dense(fc, self.n_class)
 
-        fc1 = tf.layers.dense(outputs, self.fc_hidden, name="fc1")
-        fc2 = tf.layers.dense(fc1, self.n_class, name="fc2")
-
-        return fc2
+        return fc
 
 
-
-class SketchBiRNN():
+class SketchBiRNN:
 
     def __init__(self, n_class, cell_hidden=[128, ], avg_output=False):
 
@@ -84,8 +79,6 @@ class SketchBiRNN():
         self.n_class = n_class
         self.cell_hidden = cell_hidden
         self.avg_output = avg_output
-        self.fc_hidden = 200
-
 
     def _network(self, x, seq_len, reuse=False):
         with tf.variable_scope("sketch_birnn") as scope:
@@ -104,7 +97,6 @@ class SketchBiRNN():
         cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             logits=pred, labels=tf.one_hot(y, self.n_class)))
         return pred, cost
-
 
     def inference(self, x, seq_len, reuse=False):
         pred = self._network(x, seq_len, reuse)
@@ -147,13 +139,14 @@ class SketchBiRNN():
             outputs = tf.reduce_sum(outputs, axis=1)
             outputs = tf.divide(outputs, tf.cast(seq_len[:, None], tf.float32))
 
-        fc1 = tf.layers.dense(outputs, self.fc_hidden, name="fc1")
-        fc2 = tf.layers.dense(fc1, self.n_class, name="fc2")
+        fc = tf.layers.dense(outputs, 1000)
+        fc = tf.nn.leaky_relu(fc, 0.2)
+        fc = tf.layers.dense(fc, self.n_class)
 
-        return fc2
+        return fc
 
 
-class SketchConvRNN():
+class SketchConvRNN:
 
     def __init__(self, n_class, cell_hidden=[128, ]):
 
@@ -161,8 +154,6 @@ class SketchConvRNN():
 
         self.n_class = n_class
         self.cell_hidden = cell_hidden
-        # self.fc_hidden = 200
-
 
     def train(self, x, y, seq_len):
         pred = self._network(x, seq_len, reuse=False, is_training=True)
@@ -174,7 +165,6 @@ class SketchConvRNN():
         pred = self._network(x, seq_len, reuse, is_training=False)
         pred = tf.nn.softmax(pred)
         return pred
-
 
     def _network(self, x, seq_len, reuse=False, is_training=False):
         with tf.variable_scope("sketchconvrnn") as scope:
@@ -207,7 +197,6 @@ class SketchConvRNN():
 
             return pred
 
-
     def _dynamic_birnn(self, x, seq_len, batch_size, max_seq_len):
 
         cell_fw = MultiRNNCell([DropoutWrapper(GRUCell(cell_hidden))
@@ -231,14 +220,11 @@ class SketchConvRNN():
         outputs = tf.reduce_sum(outputs, axis=1)
         outputs = tf.divide(outputs, tf.cast(seq_len[:, None], tf.float32))
 
-        # fc1 = tf.layers.dense(outputs, self.fc_hidden, name="fc1")
-        # fc2 = tf.layers.dense(fc1, self.n_class, name="fc2")
-
-        fc = tf.layers.dense(outputs, self.n_class, name="fc")
+        fc = tf.layers.dense(outputs, 1000)
+        fc = tf.nn.leaky_relu(fc, 0.2)
+        fc = tf.layers.dense(fc, self.n_class)
 
         return fc
-
-
 
 
 def online_model(n_class, cell_hidden=[128, ]):

@@ -104,3 +104,8 @@ ENV/
 pytorch/result/
 pytorch/ckpt/
 pytorch/data/
+pytorch/mnist/
+
+tf/data
+tf/model
+tf/result
