@@ -33,10 +33,13 @@ h0 = Variable(torch.randn(n_layers, batch_size, hidden_size))
 # forward
 out, _ = rnn(pack, h0)
 
+print(out)
+
 # unpack
 unpacked = nn_utils.rnn.pad_packed_sequence(out)
 out, bz = unpacked[0], unpacked[1]
-print('111', out, bz)
+print('111')
+print(out, bz)
 # seq_len x batch_size x hidden_size --> batch_size x seq_len x hidden_size
 out = out.permute((1, 0, 2))
 print('222', out)
