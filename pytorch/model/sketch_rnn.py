@@ -38,6 +38,8 @@ class SketchRNN(nn.Module):
             self.model = nn.RNN(self.input_size, hidden_size, n_layers, bidirectional=bi_rnn)
         elif rnn_type == 'lstm':
             self.model = nn.LSTM(self.input_size, hidden_size, n_layers, bidirectional=bi_rnn)
+        else:
+            raise NotImplementedError('RNN type [{:s}] is not supported'.format(rnn_type))
         self.h2o = nn.Linear(hidden_size, output_size)
 
     def forward(self, x, seq_len, hidden=None):
