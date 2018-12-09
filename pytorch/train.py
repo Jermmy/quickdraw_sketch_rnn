@@ -80,7 +80,7 @@ def train(config):
             loss.backward()
             optim.step()
 
-            if i % 1000 == 0:
+            if i % 100 == 0:
                 predict = np.argsort(output.detach().cpu().numpy(), axis=1)[:, ::-1][:,0:3].tolist()
                 actual = [[l] for l in label.detach().cpu().numpy().tolist()]
                 print('loss: %.4f, accuracy: %.4f' % (loss.item(), mapk(actual, predict)))
@@ -126,12 +126,12 @@ if __name__ == '__main__':
     parser.add_argument('--result_path', type=str, default='result/gru')
 
     # parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
-    parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train_debug')
-    parser.add_argument('--test_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/test_debug')
+    # parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train_debug')
+    # parser.add_argument('--test_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/test_debug')
 
-    parser.add_argument('--label_file', type=str, default='data/label.csv')
-    # parser.add_argument('--train_dir', type=str, default='data/')
-    # parser.add_argument('--test_dir', type=str, default='data/')
+    parser.add_argument('--label_file', type=str, default='data/label1.csv')
+    parser.add_argument('--train_dir', type=str, default='data/')
+    parser.add_argument('--test_dir', type=str, default='data/')
 
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--input_size', type=int, default=3)
