@@ -7,6 +7,8 @@ import json
 import pickle
 
 # ----------------------------------------------------------
+
+
 def generate_label_dict(quickdraw_dir, label_file):
     names = [f.split('.')[0] for f in os.listdir(quickdraw_dir) if f.endswith('csv')]
     dict = {}
@@ -17,6 +19,8 @@ def generate_label_dict(quickdraw_dir, label_file):
             f.write(name + ',' + str(label) + '\n')
 
 # ----------------------------------------------------------
+
+
 def split_dataset(quickdraw_dir, train_dir, test_dir):
 
     def process_line(line):
@@ -73,6 +77,8 @@ def split_dataset(quickdraw_dir, train_dir, test_dir):
     print("Finish. Max train size: %d, min train size: %d" % (train_max_size, train_min_size))
 
 # ----------------------------------------------------------
+
+
 def execute_cmdline(argv):
     prog = argv[0]
     parser = argparse.ArgumentParser(
@@ -102,6 +108,7 @@ def execute_cmdline(argv):
     func(**vars(args))
 
 # ------------------------------------------------------------
+
 
 if __name__ == '__main__':
     execute_cmdline(sys.argv)
