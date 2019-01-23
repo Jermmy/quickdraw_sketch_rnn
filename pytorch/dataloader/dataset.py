@@ -5,11 +5,11 @@ import os
 from os.path import join
 import numpy as np
 import pickle
+import shelve
 import random
 from tqdm import tqdm
 
-MAX_SIZE = 20000
-TEST_SIZE = 1000
+from utils.util import process_label_file
 
 
 def build_line(sketch):
@@ -35,104 +35,34 @@ def build_line(sketch):
     return sketch_lines[1:]
 
 
-def process_label_file(label_file):
-    dictionary, reverse_dict = {}, {}
-    with open(label_file, 'r') as f:
-        for line in f.readlines():
-            line = line.strip().split(',')
-            dictionary[line[0]] = int(line[1])
-            reverse_dict[int(line[1])] = line[0]
-    return dictionary, reverse_dict
-
-
 class TrainDataset(Dataset):
 
-    def __init__(self, train_dir, label_file):
-        self.train_dir = train_dir
+    def __init__(self, sketch_feat_file, shuffle=True):
+
         self.max_seq_len = 0
-        self.files = [f for f in os.listdir(train_dir) if f.endswith('pkl')]
-        self.label_dict, _ = process_label_file(label_file) # name: label
-        self.train_data = self._read_files(train_dir, self.files, self.label_dict)
+        self.train_data = shelve.open(sketch_feat_file, flag='r')
+        self.train_ids = self.train_data['key_ids']
 
-    def _read_files(self, train_dir, files, dict):
-        train_data = []
-        for file in tqdm(files):
-            with open(join(train_dir, file), 'rb') as f:
-                data = pickle.load(f)
-                random.shuffle(data)
-                # We load only MAX_SIZE in each iteration to avoid OOM
-                sample_data = data[0:MAX_SIZE]
-                for sketch in sample_data:
-                    sketch = build_line(sketch)
-                    if len(sketch) <= 0:
-                        print('error sketch: ', str(sketch))
-                        continue
-                    label = dict[file.split('.')[0]]
-                    train_data += [(sketch, label, len(sketch))]
-
-                    if len(sketch) > self.max_seq_len:
-                        self.max_seq_len = len(sketch)
-        random.shuffle(train_data)
-        return train_data
-
-    def reload_pkl_files(self):
-        '''
-        Reload dataset after each iteration
-        :return:
-        '''
-        print('reload dataset')
-        self.train_data = self._read_files(self.train_dir, self.files, self.label_dict)
+        if shuffle:
+            random.shuffle(self.train_ids)
 
     def __len__(self):
-        return len(self.train_data)
+        return len(self.train_ids)
 
     def __getitem__(self, idx):
-        sketch, label, seq_len = self.train_data[idx]
+        cur_id = self.train_ids[idx]
+        label, sketch = self.train_data[cur_id]
 
-        pad_sketch = np.zeros(shape=(self.max_seq_len, sketch.shape[1]))
-        pad_sketch[0:sketch.shape[0]] = sketch
+        sketch = build_line(sketch)
+        seq_len = sketch.shape[0]
 
-        sample = {'sketch': pad_sketch, 'label': label, 'seq_len': seq_len}
+        # pad_sketch = np.zeros(shape=(self.max_seq_len, sketch.shape[1]))
+        # pad_sketch[0:sketch.shape[0]] = sketch
+
+        sample = {'sketch': sketch, 'label': label, 'seq_len': seq_len}
         return sample
 
+class TestDataset(TrainDataset):
 
-class TestDataset(Dataset):
-
-    def __init__(self, test_dir, label_file):
-        self.test_dir = test_dir
-        self.max_seq_len = 0
-        self.files = [f for f in os.listdir(test_dir) if f.endswith('pkl')]
-        self.label_dict, _ = process_label_file(label_file) # name: label
-        self.test_data = self._read_files(test_dir, self.files, self.label_dict)
-
-    def _read_files(self, test_dir, files, dict):
-        test_data = []
-        for file in tqdm(files):
-            # print('read %s' % file)
-            with open(join(test_dir, file), 'rb') as f:
-                data = pickle.load(f)
-                # We load only TEST_SIZE in each iteration to avoid OOM
-                random.shuffle(data)
-                sample_data = data[0:TEST_SIZE]
-                for sketch in sample_data:
-                    sketch = build_line(sketch)
-                    if len(sketch) <= 0:
-                        print('error sketch: ', str(sketch))
-                        continue
-                    label = dict[file.split('.')[0]]
-                    test_data += [(sketch, label, len(sketch))]
-                    if len(sketch) > self.max_seq_len:
-                        self.max_seq_len = len(sketch)
-        return test_data
-
-    def __len__(self):
-        return len(self.test_data)
-
-    def __getitem__(self, idx):
-        sketch, label, seq_len = self.test_data[idx]
-
-        pad_sketch = np.zeros(shape=(self.max_seq_len, sketch.shape[1]))
-        pad_sketch[0:sketch.shape[0]] = sketch
-
-        sample = {'sketch': pad_sketch, 'label': label, 'seq_len': seq_len}
-        return sample
+    def __init__(self, sketch_feat_file, shuffle=True):
+        super(TestDataset, self).__init__(sketch_feat_file, shuffle)

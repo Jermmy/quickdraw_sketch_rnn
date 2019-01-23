@@ -5,6 +5,10 @@ import argparse
 import numpy as np
 import json
 import pickle
+import shelve
+import random
+
+from utils.util import process_label_file
 
 # ----------------------------------------------------------
 
@@ -21,7 +25,7 @@ def generate_label_dict(quickdraw_dir, label_file):
 # ----------------------------------------------------------
 
 
-def split_dataset(quickdraw_dir, train_dir, test_dir):
+def split_dataset(quickdraw_dir, label_file, train_dir, test_dir, train_feat_file, test_feat_file):
 
     def process_line(line):
         if line != "":
@@ -30,7 +34,8 @@ def split_dataset(quickdraw_dir, train_dir, test_dir):
             if lines[-3] == "True":
                 drawing = line.split('\"')[1]
                 drawing = json.loads(drawing)
-                return drawing
+                key_id = lines[1]
+                return drawing, key_id
             else:
                 return None
         else:
@@ -41,40 +46,57 @@ def split_dataset(quickdraw_dir, train_dir, test_dir):
     if not exists(test_dir):
         os.makedirs(test_dir)
 
+    label_dict, _ = process_label_file(label_file)  # name: label
+
     data_files = [f for f in os.listdir(quickdraw_dir) if f.endswith('csv')]
 
-    train_max_size = 0
-    train_min_size = 1000000
+    train_database = shelve.open(train_feat_file)
+    test_database = shelve.open(test_feat_file)
+
+    train_max_size = 100000
+    test_max_size = 10000
+
+    train_key_ids = []
+    test_key_ids = []
 
     for file in data_files:
+
         with open(join(quickdraw_dir, file), 'r') as f:
             lines = f.readlines()
-            train_data = []
-            test_data = []
+            random.shuffle(lines)
+            count = 0
+            label = label_dict[file.split('.')[0]]
             for i in range(1, int(len(lines) * 0.8)):
-                line = process_line(lines[i])
-                if line:
-                    train_data += [line]
+                data = process_line(lines[i])
+                if data:
+                    count += 1
+                    train_key_ids += [data[1]]
+                    train_database[data[1]] = [label, data[0]]
+
+                if count >= train_max_size:
+                    break
+
+            count = 0
 
             for i in range(int(len(lines) * 0.8), len(lines)):
-                line = process_line(lines[i])
-                if line:
-                    test_data += [line]
+                data = process_line(lines[i])
+                if data:
+                    count += 1
+                    test_key_ids += [data[1]]
+                    test_database[data[1]] = [label, data[0]]
 
-            with open(join(train_dir, file.split('.')[0] + '.pkl'), 'wb') as f:
-                pickle.dump(train_data, f)
+                if count >= test_max_size:
+                    break
 
-            with open(join(test_dir, file.split('.')[0] + '.pkl'), 'wb') as f:
-                pickle.dump(test_data, f)
+            print("Process %s, train data: %d, test data: %d" % (file, len(train_key_ids), len(test_key_ids)))
 
-            if len(train_data) > train_max_size:
-                train_max_size = len(train_data)
-            if len(train_data) < train_min_size:
-                train_min_size = len(train_data)
+    train_database['key_ids'] = train_key_ids
+    test_database['key_ids'] = test_key_ids
 
-            print("Process %s, train data: %d, test data: %d" % (file, len(train_data), len(test_data)))
+    train_database.close()
+    test_database.close()
 
-    print("Finish. Max train size: %d, min train size: %d" % (train_max_size, train_min_size))
+    print("Finish")
 
 # ----------------------------------------------------------
 
@@ -97,10 +119,13 @@ def execute_cmdline(argv):
     p.add_argument('label_file', help='Label file to write')
 
     p = add_command('split_dataset', 'Split the whole dataset into train and test part.',
-                    'split_dataset train_simplified/ train/ test/')
+                    'split_dataset train_simplified/ label.csv train/ test/ train.dat test.dat')
     p.add_argument('quickdraw_dir', help='Directory to read simplified data')
+    p.add_argument('label_file')
     p.add_argument('train_dir', help='Directory to save train simplified data')
     p.add_argument('test_dir', help='Directory to save test simplified data')
+    p.add_argument('train_feat_file', help="Train database file")
+    p.add_argument('test_feat_file', help="Test database file")
 
     args = parser.parse_args(argv[1:])
     func = globals()[args.command]
