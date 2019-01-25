@@ -9,13 +9,16 @@ from os.path import join, exists
 
 from tqdm import tqdm
 
-from dataloader.dataset import TrainDataset, TestDataset, process_label_file
+from dataloader.dataset import TrainDataset, TestDataset, collate_fn
 from model.sketch_rnn import SketchRNN
 from utils.metrics import mapk, apk
+from utils.util import process_label_file
 
 
 def train(config):
     print(config)
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
@@ -32,13 +35,13 @@ def train(config):
 
     dictionary, _ = process_label_file(config.label_file)
 
-    train_dataset = TrainDataset(config.train_dir, config.label_file)
+    train_dataset = TrainDataset(config.train_sketch_file)
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True,
-                              num_workers=config.num_workers, drop_last=True)
+                              num_workers=config.num_workers, drop_last=True, collate_fn=collate_fn)
 
-    test_dataset = TestDataset(config.test_dir, config.label_file)
+    test_dataset = TestDataset(config.test_sketch_file)
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False,
-                             num_workers=1, drop_last=True)
+                             num_workers=1, drop_last=True, collate_fn=collate_fn)
 
     sketchrnn = SketchRNN(config.input_size, config.hidden_size, output_size=len(dictionary.keys()),
                           n_layers=config.n_layers,
@@ -62,10 +65,13 @@ def train(config):
 
         # ===================== Train =================================
 
-        for i, data in enumerate(tqdm(train_loader)):
+        for i, data in enumerate((train_loader)):
             sketch = data['sketch'].float().to(device)
             label = data['label'].to(device)
             seq_len = data['seq_len'].to(device)
+
+            # print(label)
+            # print(seq_len)
 
             optim.zero_grad()
 
@@ -80,12 +86,13 @@ def train(config):
             loss.backward()
             optim.step()
 
-            if i % 100 == 0:
+            if i % 2000 == 0:
                 predict = np.argsort(output.detach().cpu().numpy(), axis=1)[:, ::-1][:,0:3].tolist()
                 actual = [[l] for l in label.detach().cpu().numpy().tolist()]
-                print('loss: %.4f, accuracy: %.4f' % (loss.item(), mapk(actual, predict)))
+                print('Epoch: %d/%d | Step: %d/%d | Loss: %.4f | Accuracy: %.4f' %
+                      (epoch, config.epochs, i, len(train_loader), loss.item(), mapk(actual, predict)))
 
-            if i % 1000 == 0:
+            if i % 5000 == 0:
                 writer.add_scalar('loss', loss.item(), (epoch - 1) * len(train_loader) + i)
 
         # ======================= Evaluation =============================
@@ -107,16 +114,16 @@ def train(config):
         writer.add_scalar('accuracy', accuracy, epoch)
         sketchrnn.train()
 
-        if epoch % 20 == 0:
+        if epoch % 10 == 0:
             lr /= 10
             optim = torch.optim.RMSprop(params=sketchrnn.parameters(), lr=lr)
-
-        if epoch % 5 == 0:
-            train_dataset.reload_pkl_files()
 
         torch.save(sketchrnn.state_dict(), join(config.ckpt_path, 'epoch-%d.pkl' % epoch))
 
     writer.close()
+
+    train_dataset.close()
+    test_dataset.close()
 
 
 if __name__ == '__main__':
@@ -125,13 +132,11 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_path', type=str, default='ckpt/gru')
     parser.add_argument('--result_path', type=str, default='result/gru')
 
-    # parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
-    # parser.add_argument('--train_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/train_debug')
-    # parser.add_argument('--test_dir', type=str, default='/media/liuwq/data/Dataset/quick draw/test_debug')
-
-    parser.add_argument('--label_file', type=str, default='data/label1.csv')
-    parser.add_argument('--train_dir', type=str, default='data/')
-    parser.add_argument('--test_dir', type=str, default='data/')
+    # parser.add_argument('--train_sketch_file', type=str, default='/media/liuwq/data/Dataset/quick draw/train_feat')
+    # parser.add_argument('--test_sketch_file', type=str, default='/media/liuwq/data/Dataset/quick draw/test_feat')
+    parser.add_argument('--train_sketch_file', type=str, default='data/train_feat')
+    parser.add_argument('--test_sketch_file', type=str, default='data/test_feat')
+    parser.add_argument('--label_file', type=str, default='/media/liuwq/data/Dataset/quick draw/label.csv')
 
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--input_size', type=int, default=3)

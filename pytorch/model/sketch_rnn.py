@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+from model.weight_init import weight_init
 
 
 class SketchRNN(nn.Module):
@@ -41,6 +42,7 @@ class SketchRNN(nn.Module):
         else:
             raise NotImplementedError('RNN type [{:s}] is not supported'.format(rnn_type))
         self.h2o = nn.Linear(hidden_size, output_size)
+        self.apply(weight_init)
 
     def forward(self, x, seq_len, hidden=None):
         '''

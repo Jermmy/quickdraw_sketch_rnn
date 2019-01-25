@@ -35,6 +35,21 @@ def build_line(sketch):
     return sketch_lines[1:]
 
 
+def collate_fn(batch):
+    batch.sort(key=lambda x: x['seq_len'], reverse=True)
+    sketches = [x['sketch'] for x in batch]  # x['sketch']: [seq_len x feat_size]
+    labels = np.array([x['label'] for x in batch])
+    seq_lens = np.array([x['seq_len'] for x in batch])
+    max_seq_len = seq_lens[0]
+    pad_sketch = np.zeros(shape=(len(sketches), max_seq_len, sketches[0].shape[1]))
+    for i in range(len(sketches)):
+        pad_sketch[i, 0:sketches[i].shape[0], :] = sketches[i]
+    pad_sketch = torch.from_numpy(pad_sketch)
+    labels = torch.from_numpy(labels)
+    seq_lens = torch.from_numpy(seq_lens)
+    return {'sketch': pad_sketch, 'label': labels, 'seq_len': seq_lens}
+
+
 class TrainDataset(Dataset):
 
     def __init__(self, sketch_feat_file, shuffle=True):
@@ -42,6 +57,7 @@ class TrainDataset(Dataset):
         self.max_seq_len = 0
         self.train_data = shelve.open(sketch_feat_file, flag='r')
         self.train_ids = self.train_data['key_ids']
+        print("Loading key ids finish!")
 
         if shuffle:
             random.shuffle(self.train_ids)
@@ -61,6 +77,10 @@ class TrainDataset(Dataset):
 
         sample = {'sketch': sketch, 'label': label, 'seq_len': seq_len}
         return sample
+
+    def close(self):
+        self.train_data.close()
+
 
 class TestDataset(TrainDataset):
 

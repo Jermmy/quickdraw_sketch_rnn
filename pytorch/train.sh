@@ -1,14 +1,13 @@
-batch_size=32
+batch_size=64
 input_size=3
 hidden_size=256
 n_layers=2
-load_model=None
-lr=1e-3
+lr=1e-4
 start_idx=0
 epochs=10
 rnn_type=gru
 avg_out=1
-bi_rnn=0
+bi_rnn=1
 use_conv=0
 
 ckpt_path=ckpt/${rnn_type}/layers_${n_layers}_hidden_${hidden_size}
