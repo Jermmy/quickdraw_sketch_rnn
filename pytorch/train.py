@@ -78,6 +78,9 @@ def train(config):
             loss = criterion(output, label)
 
             loss.backward()
+
+            torch.nn.utils.clip_grad_norm(sketchrnn.parameters(), config.grad_clip)
+
             optim.step()
 
             if i % 100 == 0:
@@ -139,6 +142,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_layers', type=int, default=2)
     parser.add_argument('--load_model', type=str, default=None)
     parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--grad_clip', type=float, default=1.)
     parser.add_argument('--start_idx', type=int, default=0)
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--num_workers', type=int, default=4)
